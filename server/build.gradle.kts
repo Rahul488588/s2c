@@ -17,6 +17,13 @@ dependencies {
     implementation("io.ktor:ktor-serialization-gson-jvm:$ktor_version")
     implementation("io.ktor:ktor-server-auth-jvm:$ktor_version")
     implementation("io.ktor:ktor-server-auth-jwt-jvm:$ktor_version")
+    
+    // Ktor Client for OpenAI/OpenRouter API calls
+    implementation("io.ktor:ktor-client-core:$ktor_version")
+    implementation("io.ktor:ktor-client-cio:$ktor_version")
+    implementation("io.ktor:ktor-client-content-negotiation:$ktor_version")
+    implementation("io.ktor:ktor-serialization-kotlinx-json:$ktor_version")
+    
     implementation("ch.qos.logback:logback-classic:1.4.14")
 
     // Database: Exposed + H2

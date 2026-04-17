@@ -1,6 +1,9 @@
 package com.example.skill2career
 
+import android.content.Context
+import android.widget.Toast
 import androidx.compose.foundation.layout.*
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
@@ -23,6 +26,7 @@ import kotlinx.coroutines.launch
 fun SavedScreen(navController: NavController, mainViewModel: MainViewModel) {
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val scope = rememberCoroutineScope()
+    val context = LocalContext.current
     var showApplyDialog by remember { mutableStateOf(false) }
     var selectedOpportunity by remember { mutableStateOf<Opportunity?>(null) }
     val savedOpportunitiesList = mainViewModel.savedOpportunities
@@ -93,6 +97,7 @@ fun SavedScreen(navController: NavController, mainViewModel: MainViewModel) {
                 onDismiss = { showApplyDialog = false },
                 onApplySubmit = { application, uris ->
                     mainViewModel.applyForOpportunity(application, uris)
+                    Toast.makeText(context, "Application submitted successfully!", Toast.LENGTH_SHORT).show()
                     showApplyDialog = false
                 }
             )

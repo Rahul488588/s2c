@@ -75,6 +75,19 @@ interface ApiService {
     
     @POST("superadmin/mark-notification-read")
     suspend fun markNotificationRead(@Body request: Map<String, String>): Response<Unit>
+    
+    // 🤖 AI Opportunity Endpoints
+    @POST("admin/ai/opportunities/search")
+    suspend fun searchAIOpportunities(@Body request: Map<String, String>): Response<Map<String, Any>>
+    
+    @GET("admin/ai/opportunities/pending")
+    suspend fun getPendingAIOpportunities(): Response<Map<String, Any>>
+    
+    @POST("admin/ai/opportunities/{id}/approve")
+    suspend fun approveAIOpportunity(@Path("id") id: String): Response<Map<String, Any>>
+    
+    @POST("admin/ai/opportunities/{id}/reject")
+    suspend fun rejectAIOpportunity(@Path("id") id: String): Response<Map<String, Any>>
 }
 
 data class LoginRequest(

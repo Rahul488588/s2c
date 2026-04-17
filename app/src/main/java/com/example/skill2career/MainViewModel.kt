@@ -449,7 +449,92 @@ class MainViewModel(application: AndroidApp) : AndroidViewModel(application) {
             }
         }
     }
-    
+
+    // AI Opportunity Methods
+    fun searchAIOpportunities(query: String, onResult: (Boolean, List<Map<String, String>>, String?) -> Unit) {
+        viewModelScope.launch {
+            try {
+                val userRole = currentUser.value?.role ?: "Student"
+                val userEmail = currentUser.value?.email ?: ""
+                val response = api.searchAIOpportunities(mapOf("query" to query))
+                if (response.isSuccessful) {
+                    val result = response.body()
+                    if (result != null && result["success"] == true) {
+                        val opportunities = result["opportunities"] as? List<Map<String, String>> ?: emptyList()
+                        onResult(true, opportunities, null)
+                    } else {
+                        onResult(false, emptyList(), result?.get("error")?.toString() ?: "Unknown error")
+                    }
+                } else {
+                    onResult(false, emptyList(), "API error: ${response.code()}")
+                }
+            } catch (e: Exception) {
+                onResult(false, emptyList(), e.message)
+            }
+        }
+    }
+
+    fun fetchPendingAIOpportunities(onResult: (Boolean, List<Map<String, String>>) -> Unit) {
+        viewModelScope.launch {
+            try {
+                val response = api.getPendingAIOpportunities()
+                if (response.isSuccessful) {
+                    val result = response.body()
+                    if (result != null) {
+                        val opportunities = result["opportunities"] as? List<Map<String, String>> ?: emptyList()
+                        onResult(true, opportunities)
+                    } else {
+                        onResult(false, emptyList())
+                    }
+                } else {
+                    onResult(false, emptyList())
+                }
+            } catch (e: Exception) {
+                onResult(false, emptyList())
+            }
+        }
+    }
+
+    fun approveAIOpportunity(id: String, onResult: (Boolean, String?) -> Unit) {
+        viewModelScope.launch {
+            try {
+                val response = api.approveAIOpportunity(id)
+                if (response.isSuccessful) {
+                    val result = response.body()
+                    if (result != null && result["success"] == true) {
+                        onResult(true, result["message"]?.toString())
+                    } else {
+                        onResult(false, result?.get("error")?.toString() ?: "Unknown error")
+                    }
+                } else {
+                    onResult(false, "API error: ${response.code()}")
+                }
+            } catch (e: Exception) {
+                onResult(false, e.message)
+            }
+        }
+    }
+
+    fun rejectAIOpportunity(id: String, onResult: (Boolean, String?) -> Unit) {
+        viewModelScope.launch {
+            try {
+                val response = api.rejectAIOpportunity(id)
+                if (response.isSuccessful) {
+                    val result = response.body()
+                    if (result != null && result["success"] == true) {
+                        onResult(true, result["message"]?.toString())
+                    } else {
+                        onResult(false, result?.get("error")?.toString() ?: "Unknown error")
+                    }
+                } else {
+                    onResult(false, "API error: ${response.code()}")
+                }
+            } catch (e: Exception) {
+                onResult(false, e.message)
+            }
+        }
+    }
+
     // 🔐 SUPER ADMIN FUNCTIONS
     
     // State for super admin notifications and requests

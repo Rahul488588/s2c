@@ -207,6 +207,25 @@ object AdminApplicationsTable : Table("admin_applications") {
     override val primaryKey = PrimaryKey(id)
 }
 
+object AIDiscoveredOpportunitiesTable : Table("ai_discovered_opportunities") {
+    val id = varchar("id", 50)
+    val title = varchar("title", 255)
+    val company = varchar("company", 255)
+    val type = varchar("type", 50) // "Internship" or "Scholarship"
+    val description = text("description")
+    val location = varchar("location", 255).nullable()
+    val stipendOrSalary = varchar("stipendOrSalary", 100).nullable()
+    val eligibility = text("eligibility").nullable()
+    val applicationUrl = varchar("applicationUrl", 500).nullable()
+    val deadline = varchar("deadline", 50).nullable()
+    val opportunitySource = varchar("opportunitySource", 255) // Source of the opportunity (e.g., "AI Search")
+    val status = varchar("status", 50) // "pending", "approved", "rejected"
+    val discoveredAt = varchar("discoveredAt", 50)
+    val reviewedAt = varchar("reviewedAt", 50).nullable()
+    val reviewedBy = varchar("reviewedBy", 128).nullable()
+    override val primaryKey = PrimaryKey(id)
+}
+
 // 🔹 STUDENT Tables - Completely isolated from Admin data  
 object StudentOpportunitiesTable : Table("student_opportunities") {
     val id = varchar("id", 50)
@@ -345,7 +364,8 @@ fun main() {
             UsersTable, ConfigTable, AdminApprovalTable, NotificationsTable,
             OpportunitiesTable, ApplicationsTable,  // Legacy tables
             AdminOpportunitiesTable, AdminApplicationsTable,  // Admin isolated
-            StudentOpportunitiesTable, StudentApplicationsTable  // Student isolated
+            StudentOpportunitiesTable, StudentApplicationsTable,  // Student isolated
+            AIDiscoveredOpportunitiesTable  // AI-discovered opportunities
         )
         
         // Initialize default admin secret if not exists
@@ -1619,6 +1639,221 @@ fun main() {
                     call.respondFile(file)
                 } else {
                     call.respond(HttpStatusCode.NotFound)
+                }
+            }
+
+            // 🤖 AI-Discovered Opportunities Routes (Admin only)
+            authenticate("jwt") {
+                // 🔍 Search for AI opportunities
+                post("/admin/ai/opportunities/search") {
+                    val principal = call.principal<JWTPrincipal>()
+                    val tokenRole = principal?.payload?.getClaim("role")?.asString() ?: ""
+                    val adminEmail = principal?.payload?.getClaim("email")?.asString() ?: ""
+
+                    if (tokenRole != "Admin" && tokenRole != "SuperAdmin") {
+                        call.respond(HttpStatusCode.Forbidden, "Admin access required")
+                        return@post
+                    }
+
+                    val request = call.receive<Map<String, String>>()
+                    val query = request["query"] ?: ""
+
+                    if (query.isBlank()) {
+                        call.respond(HttpStatusCode.BadRequest, "query is required")
+                        return@post
+                    }
+
+                    try {
+                        val aiService = OpenAIService()
+                        val response = aiService.searchAIOpportunities(query)
+
+                        // Parse the JSON response
+                        val opportunities = gson.fromJson(response, List::class.java) as? List<Map<String, String>> ?: emptyList()
+
+                        // Store in database
+                        val currentTime = java.time.LocalDateTime.now().toString()
+                        transaction {
+                            opportunities.forEach { opp ->
+                                val id = UUID.randomUUID().toString()
+                                val title = opp["title"] ?: ""
+                                val company = opp["organization"] ?: ""
+                                val type = opp["type"] ?: "Internship"
+                                val description = opp["description"] ?: ""
+                                val location = opp["location"]
+                                val stipendOrSalary = opp["stipendOrSalary"]
+                                val eligibility = opp["eligibility"]
+                                val applicationUrl = opp["link"]
+                                val deadline = opp["deadline"]
+
+                                AIDiscoveredOpportunitiesTable.insert {
+                                    it[AIDiscoveredOpportunitiesTable.id] = id
+                                    it[AIDiscoveredOpportunitiesTable.title] = title
+                                    it[AIDiscoveredOpportunitiesTable.company] = company
+                                    it[AIDiscoveredOpportunitiesTable.type] = type
+                                    it[AIDiscoveredOpportunitiesTable.description] = description
+                                    it[AIDiscoveredOpportunitiesTable.location] = location
+                                    it[AIDiscoveredOpportunitiesTable.stipendOrSalary] = stipendOrSalary
+                                    it[AIDiscoveredOpportunitiesTable.eligibility] = eligibility
+                                    it[AIDiscoveredOpportunitiesTable.applicationUrl] = applicationUrl
+                                    it[AIDiscoveredOpportunitiesTable.deadline] = deadline
+                                    it[AIDiscoveredOpportunitiesTable.opportunitySource] = "AI Search"
+                                    it[AIDiscoveredOpportunitiesTable.status] = "pending"
+                                    it[AIDiscoveredOpportunitiesTable.discoveredAt] = currentTime
+                                    it[AIDiscoveredOpportunitiesTable.reviewedAt] = null
+                                    it[AIDiscoveredOpportunitiesTable.reviewedBy] = null
+                                }
+                            }
+                        }
+
+                        println("✅ Admin $adminEmail searched for AI opportunities: ${opportunities.size} found")
+                        call.respond(mapOf("success" to true, "opportunities" to opportunities))
+                    } catch (e: Exception) {
+                        println("❌ Error searching AI opportunities: ${e.message}")
+                        call.respond(HttpStatusCode.InternalServerError, mapOf("success" to false, "error" to e.message))
+                    }
+                }
+
+                // 📋 Get pending AI opportunities
+                get("/admin/ai/opportunities/pending") {
+                    val principal = call.principal<JWTPrincipal>()
+                    val tokenRole = principal?.payload?.getClaim("role")?.asString() ?: ""
+
+                    if (tokenRole != "Admin" && tokenRole != "SuperAdmin") {
+                        call.respond(HttpStatusCode.Forbidden, "Admin access required")
+                        return@get
+                    }
+
+                    val opportunities = transaction {
+                        AIDiscoveredOpportunitiesTable.select { AIDiscoveredOpportunitiesTable.status eq "pending" }
+                            .orderBy(AIDiscoveredOpportunitiesTable.discoveredAt, SortOrder.DESC)
+                            .map {
+                                mapOf(
+                                    "id" to it[AIDiscoveredOpportunitiesTable.id],
+                                    "title" to it[AIDiscoveredOpportunitiesTable.title],
+                                    "company" to it[AIDiscoveredOpportunitiesTable.company],
+                                    "type" to it[AIDiscoveredOpportunitiesTable.type],
+                                    "description" to it[AIDiscoveredOpportunitiesTable.description],
+                                    "location" to it[AIDiscoveredOpportunitiesTable.location],
+                                    "stipendOrSalary" to it[AIDiscoveredOpportunitiesTable.stipendOrSalary],
+                                    "eligibility" to it[AIDiscoveredOpportunitiesTable.eligibility],
+                                    "applicationUrl" to it[AIDiscoveredOpportunitiesTable.applicationUrl],
+                                    "deadline" to it[AIDiscoveredOpportunitiesTable.deadline],
+                                    "source" to it[AIDiscoveredOpportunitiesTable.opportunitySource],
+                                    "status" to it[AIDiscoveredOpportunitiesTable.status],
+                                    "discoveredAt" to it[AIDiscoveredOpportunitiesTable.discoveredAt]
+                                )
+                            }
+                    }
+
+                    call.respond(mapOf("opportunities" to opportunities))
+                }
+
+                // ✅ Approve AI-Discovered Opportunity (Admin only)
+                post("/admin/ai/opportunities/{id}/approve") {
+                    val principal = call.principal<JWTPrincipal>()
+                    val tokenRole = principal?.payload?.getClaim("role")?.asString() ?: ""
+                    val adminEmail = principal?.payload?.getClaim("email")?.asString() ?: ""
+
+                    if (tokenRole != "Admin" && tokenRole != "SuperAdmin") {
+                        call.respond(HttpStatusCode.Forbidden, "Admin access required")
+                        return@post
+                    }
+
+                    val id = call.parameters["id"] ?: return@post call.respond(HttpStatusCode.BadRequest, "id is required")
+
+                    val currentTime = java.time.LocalDateTime.now().toString()
+                    val updated = transaction {
+                        AIDiscoveredOpportunitiesTable.update({ AIDiscoveredOpportunitiesTable.id eq id }) {
+                            it[status] = "approved"
+                            it[reviewedAt] = currentTime
+                            it[reviewedBy] = adminEmail
+                        } > 0
+                    }
+
+                    if (updated) {
+                        // Also add to both StudentOpportunitiesTable and AdminOpportunitiesTable so they're visible to both students and admins
+                        val opp = transaction {
+                            AIDiscoveredOpportunitiesTable.select { AIDiscoveredOpportunitiesTable.id eq id }.singleOrNull()
+                        }
+
+                        if (opp != null) {
+                            val oppId: String = opp[AIDiscoveredOpportunitiesTable.id] ?: ""
+                            val oppTitle: String = opp[AIDiscoveredOpportunitiesTable.title] ?: ""
+                            val oppCompany: String = opp[AIDiscoveredOpportunitiesTable.company] ?: ""
+                            val oppType: String = opp[AIDiscoveredOpportunitiesTable.type] ?: ""
+                            val oppLocation: String? = opp[AIDiscoveredOpportunitiesTable.location]
+                            val oppStipend: String? = opp[AIDiscoveredOpportunitiesTable.stipendOrSalary]
+
+                            // Insert into StudentOpportunitiesTable for students to see
+                            transaction {
+                                StudentOpportunitiesTable.insert {
+                                    it[StudentOpportunitiesTable.id] = oppId
+                                    it[StudentOpportunitiesTable.title] = oppTitle
+                                    it[StudentOpportunitiesTable.company] = oppCompany
+                                    it[StudentOpportunitiesTable.type] = oppType
+                                    it[StudentOpportunitiesTable.tags] = gson.toJson(listOf("AI-Discovered"))
+                                    it[StudentOpportunitiesTable.location] = oppLocation ?: "Not specified"
+                                    it[StudentOpportunitiesTable.stipendOrSalary] = oppStipend
+                                    it[StudentOpportunitiesTable.date] = "Just now"
+                                    it[StudentOpportunitiesTable.minCgpa] = null
+                                    it[StudentOpportunitiesTable.createdBy] = adminEmail
+                                    it[StudentOpportunitiesTable.createdAt] = currentTime
+                                }
+                            }
+
+                            // Insert into AdminOpportunitiesTable for admins to see in active opportunities
+                            transaction {
+                                AdminOpportunitiesTable.insert {
+                                    it[AdminOpportunitiesTable.id] = oppId
+                                    it[AdminOpportunitiesTable.title] = oppTitle
+                                    it[AdminOpportunitiesTable.company] = oppCompany
+                                    it[AdminOpportunitiesTable.type] = oppType
+                                    it[AdminOpportunitiesTable.tags] = gson.toJson(listOf("AI-Discovered"))
+                                    it[AdminOpportunitiesTable.location] = oppLocation ?: "Not specified"
+                                    it[AdminOpportunitiesTable.stipendOrSalary] = oppStipend
+                                    it[AdminOpportunitiesTable.date] = "Just now"
+                                    it[AdminOpportunitiesTable.minCgpa] = null
+                                    it[AdminOpportunitiesTable.createdBy] = adminEmail
+                                    it[AdminOpportunitiesTable.createdAt] = currentTime
+                                }
+                            }
+                        }
+
+                        println("✅ Admin approved AI opportunity: $id")
+                        call.respond(mapOf("success" to true, "message" to "Opportunity approved"))
+                    } else {
+                        call.respond(HttpStatusCode.NotFound, "Opportunity not found")
+                    }
+                }
+
+                // ❌ Reject AI-Discovered Opportunity (Admin only)
+                post("/admin/ai/opportunities/{id}/reject") {
+                    val principal = call.principal<JWTPrincipal>()
+                    val tokenRole = principal?.payload?.getClaim("role")?.asString() ?: ""
+                    val adminEmail = principal?.payload?.getClaim("email")?.asString() ?: ""
+
+                    if (tokenRole != "Admin" && tokenRole != "SuperAdmin") {
+                        call.respond(HttpStatusCode.Forbidden, "Admin access required")
+                        return@post
+                    }
+
+                    val id = call.parameters["id"] ?: return@post call.respond(HttpStatusCode.BadRequest, "id is required")
+
+                    val currentTime = java.time.LocalDateTime.now().toString()
+                    val updated = transaction {
+                        AIDiscoveredOpportunitiesTable.update({ AIDiscoveredOpportunitiesTable.id eq id }) {
+                            it[status] = "rejected"
+                            it[reviewedAt] = currentTime
+                            it[reviewedBy] = adminEmail
+                        } > 0
+                    }
+
+                    if (updated) {
+                        println("✅ Admin rejected AI opportunity: $id")
+                        call.respond(mapOf("success" to true, "message" to "Opportunity rejected"))
+                    } else {
+                        call.respond(HttpStatusCode.NotFound, "Opportunity not found")
+                    }
                 }
             }
         }

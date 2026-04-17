@@ -302,6 +302,7 @@ fun LoginScreen(
                                 focusedLabelColor = Color.Black,
                                 unfocusedLabelColor = Color.Gray,
                                 focusedTextColor = Color.Black,
+                                cursorColor = Color.Black,
                                 unfocusedTextColor = Color.Black,
                                 focusedLeadingIconColor = Color.Black,
                                 unfocusedLeadingIconColor = Color.Gray
@@ -355,6 +356,7 @@ fun LoginScreen(
                                 focusedLabelColor = Color.Black,
                                 unfocusedLabelColor = Color.Gray,
                                 focusedTextColor = Color.Black,
+                                cursorColor = Color.Black,
                                 unfocusedTextColor = Color.Black,
                                 focusedLeadingIconColor = Color.Black,
                                 unfocusedLeadingIconColor = Color.Gray,

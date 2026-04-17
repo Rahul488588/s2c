@@ -3,6 +3,7 @@ package com.example.skill2career
 import android.content.Context
 import android.net.Uri
 import android.provider.OpenableColumns
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.*
@@ -67,6 +68,7 @@ data class Opportunity(
 fun OpportunitiesScreen(navController: NavController, initialFilter: String = "All", mainViewModel: MainViewModel) {
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val scope = rememberCoroutineScope()
+    val context = LocalContext.current
     var searchQuery by remember { mutableStateOf("") }
     var selectedFilter by remember { mutableStateOf(initialFilter) }
     val filters = listOf("All", "Internship", "Scholarship", "Job")
@@ -197,6 +199,7 @@ fun OpportunitiesScreen(navController: NavController, initialFilter: String = "A
                 onDismiss = { showApplyDialog = false },
                 onApplySubmit = { application, uris ->
                     mainViewModel.applyForOpportunity(application, uris)
+                    Toast.makeText(context, "Application submitted successfully!", Toast.LENGTH_SHORT).show()
                     showApplyDialog = false
                 }
             )
