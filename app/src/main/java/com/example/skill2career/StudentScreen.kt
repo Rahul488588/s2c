@@ -32,14 +32,6 @@ import androidx.navigation.NavController
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
-/**
- * -----------------------------------------------------------------------------------------
- *  BACKEND NOTE: STUDENT DASHBOARD
- *  This screen represents the main entry point for Students.
- *  TODO: Fetch real statistics (Applied count, etc.) from backend.
- * -----------------------------------------------------------------------------------------
- */
-
 data class Stat(
     val count: String,
     val title: String,
@@ -54,12 +46,10 @@ fun StudentScreen(navController: NavController, mainViewModel: MainViewModel) {
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val scope = rememberCoroutineScope()
 
-    // Handle back button - close drawer if open, otherwise exit app
     BackHandler {
         if (drawerState.isOpen) {
             scope.launch { drawerState.close() }
         } else {
-            // Exit the app when on main screen
             (navController.context as? android.app.Activity)?.finish()
         }
     }
@@ -93,7 +83,6 @@ fun StudentScreen(navController: NavController, mainViewModel: MainViewModel) {
             containerColor = Color(0xFFF8F9FA)
         ) { paddingValues ->
             Box(modifier = Modifier.fillMaxSize()) {
-                // Background Decorative Element
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -284,7 +273,6 @@ fun Sidebar(
                 drawerState.close()
                 mainViewModel.logout()
                 navController.navigate("login") {
-                    // Clear entire back stack
                     popUpTo(0) { inclusive = true }
                 }
             }
@@ -337,7 +325,7 @@ fun StatsGrid(navController: NavController, mainViewModel: MainViewModel) {
     val stats = listOf(
         Stat(opportunitiesCount, "Opportunities", Icons.AutoMirrored.Filled.TrendingUp, Color(0xFF34A853), "opportunities"),
         Stat(appliedCount, "Applied", Icons.Default.CheckCircle, Color(0xFF1A73E8), "myApplications"),
-        Stat(scholarshipCount, "Scholarships", Icons.Default.School, Color(0xFFFBBC04), "opportunities/Scholarship"),
+        Stat(scholarshipCount, "Scholarships", Icons.Default.School, Color(0xFFFBBC04), "opportunities?filter=Scholarship"),
         Stat("3", "Notifications", Icons.Default.Notifications, Color(0xFFEA4335), null)
     )
 
