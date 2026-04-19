@@ -20,10 +20,13 @@ object OpenAIConfig {
     private fun loadDotEnv(): Map<String, String> {
         val candidates = listOf(
             File(".env"),
-            File("server/.env")
+            File("server/.env"),
+            File("../.env"),
+            File("../server/.env")
         )
 
         val file = candidates.firstOrNull { it.exists() && it.isFile } ?: return emptyMap()
+        println("📁 Loading .env from: ${file.absolutePath}")
         return file.readLines()
             .map { it.trim() }
             .filter { it.isNotEmpty() && !it.startsWith("#") }
@@ -39,16 +42,16 @@ object OpenAIConfig {
 
     private val dotEnv: Map<String, String> = runCatching { loadDotEnv() }.getOrDefault(emptyMap())
 
-    private fun env(name: String): String? = System.getenv(name) ?: dotEnv[name]
+    private fun env(name: String): String? = dotEnv[name] ?: System.getenv(name)
 
     // Set your OpenRouter API key in environment variable OPENROUTER_API_KEY
     val API_KEY: String = env("OPENROUTER_API_KEY") ?: ""
-    
+
     // Models for different AI operations
-    private val DEFAULT_MODEL_RESUME_ANALYSIS = "openai/gpt-4o-mini"
-    private val DEFAULT_MODEL_SKILL_EXTRACTION = "openai/gpt-4o-mini"
-    private val DEFAULT_MODEL_CAREER_SUGGESTIONS = "openai/gpt-4o-mini"
-    private val DEFAULT_MODEL_OPPORTUNITY_SEARCH = "openai/gpt-4o-mini"
+    private const val DEFAULT_MODEL_RESUME_ANALYSIS = "openai/gpt-4o-mini"
+    private const val DEFAULT_MODEL_SKILL_EXTRACTION = "openai/gpt-4o-mini"
+    private const val DEFAULT_MODEL_CAREER_SUGGESTIONS = "openai/gpt-4o-mini"
+    private const val DEFAULT_MODEL_OPPORTUNITY_SEARCH = "openai/gpt-4o-mini"
 
     val MODEL_RESUME_ANALYSIS: String = env("OPENROUTER_MODEL_RESUME_ANALYSIS") ?: DEFAULT_MODEL_RESUME_ANALYSIS
     val MODEL_SKILL_EXTRACTION: String = env("OPENROUTER_MODEL_SKILL_EXTRACTION") ?: DEFAULT_MODEL_SKILL_EXTRACTION
@@ -63,8 +66,15 @@ object OpenAIConfig {
     val X_TITLE: String? = env("OPENROUTER_X_TITLE")
     
     init {
+        println("🔑 API Key Status:")
+        println("  - From System.getenv: ${System.getenv("OPENROUTER_API_KEY")?.take(10)}...")
+        println("  - From .env: ${dotEnv["OPENROUTER_API_KEY"]?.take(10)}...")
+        println("  - Final API_KEY: ${if (API_KEY.isBlank()) "NOT SET" else API_KEY.take(10) + "..."}")
+        
         if (API_KEY.isBlank() || API_KEY.startsWith("YOUR_")) {
             println("⚠️ WARNING: OpenRouter API key not configured. Please set OPENROUTER_API_KEY environment variable.")
+        } else {
+            println("✅ OpenRouter API key loaded successfully")
         }
 
         println("✅ OpenRouter config: baseUrl=$BASE_URL")

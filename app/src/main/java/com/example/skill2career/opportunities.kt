@@ -50,6 +50,23 @@ import com.google.gson.annotations.SerializedName
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
+// ─── Classical Professional Palette ────────────────────────────────────────────
+private val OppNavyDeep      = Color(0xFF1B2A4A)
+private val OppNavyMid       = Color(0xFF2E3D5E)
+private val OppGold          = Color(0xFFC9A84C)
+private val OppGoldLight     = Color(0xFFF0EAD5)
+private val OppIvory         = Color(0xFFF5F0E8)
+private val OppCardSurface   = Color(0xFFFAF8F4)
+private val OppTextPrimary   = Color(0xFF1A1A2E)
+private val OppTextSecondary = Color(0xFF4A4F6A)
+private val OppTextMuted     = Color(0xFF8B8FA8)
+private val OppDividerLight  = Color(0xFFD4C5A9)
+private val OppForestGreen   = Color(0xFF2D5A3D)
+private val OppForestGreenBg = Color(0xFFD5E8DC)
+private val OppBurgundy      = Color(0xFF7A2A35)
+private val OppBurgundyBg    = Color(0xFFF0D5D5)
+// ───────────────────────────────────────────────────────────────────────────────
+
 enum class OpportunityType {
     @SerializedName("Internship", alternate = ["internship"])
     Internship,
@@ -70,14 +87,13 @@ data class Opportunity(
     val id: String = "",
     val title: String = "",
     val company: String = "",
-    val type: OpportunityType? = OpportunityType.Internship, // Make nullable for safety with Gson
+    val type: OpportunityType? = OpportunityType.Internship,
     val tags: List<String> = emptyList(),
     val location: String = "",
     val stipendOrSalary: String? = null,
     val date: String = "",
     val minCgpa: Double? = null
 ) {
-    // Safe getter for type
     val safeType: OpportunityType get() = type ?: OpportunityType.Internship
 }
 
@@ -108,131 +124,155 @@ fun OpportunitiesScreen(navController: NavController, initialFilter: String = "A
         Scaffold(
             topBar = {
                 TopAppBar(
-                    title = { Text("Opportunities", fontWeight = FontWeight.Bold) },
+                    title = {
+                        Text(
+                            "Opportunities",
+                            fontWeight = FontWeight.SemiBold,
+                            color = Color.White
+                        )
+                    },
                     navigationIcon = {
                         IconButton(onClick = { scope.launch { drawerState.open() } }) {
-                            Icon(Icons.Default.Menu, contentDescription = "Menu")
+                            Icon(Icons.Default.Menu, contentDescription = "Menu", tint = OppGold)
                         }
                     },
-                    colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
+                    actions = {
+                        IconButton(onClick = { }) {
+                            Icon(Icons.Default.Notifications, contentDescription = "Notifications", tint = OppGold)
+                        }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = OppNavyDeep,
+                        titleContentColor = Color.White
+                    )
                 )
             },
-            containerColor = Color(0xFFF8F9FA)
+            containerColor = OppIvory
         ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .padding(horizontal = 16.dp)
-        ) {
-            Spacer(modifier = Modifier.height(8.dp))
-            
-            // Search Bar
-            OutlinedTextField(
-                value = searchQuery,
-                onValueChange = { searchQuery = it },
-                modifier = Modifier.fillMaxWidth().height(52.dp),
-                placeholder = { Text("Search career...", fontSize = 14.sp) },
-                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, modifier = Modifier.size(20.dp), tint = Color(0xFF1A73E8)) },
-                shape = RoundedCornerShape(16.dp),
-                singleLine = true,
-                colors = OutlinedTextFieldDefaults.colors(
-                    unfocusedBorderColor = Color.LightGray.copy(alpha = 0.4f),
-                    focusedBorderColor = Color(0xFF1A73E8),
-                    cursorColor = Color(0xFF1A73E8)
-                )
-            )
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            LazyRow(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                contentPadding = PaddingValues(bottom = 8.dp)
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+                    .padding(horizontal = 16.dp)
             ) {
-                items(filters) { filter ->
-                    val isSelected = selectedFilter == filter
-                    Surface(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(12.dp))
-                            .clickable { selectedFilter = filter },
-                        color = if (isSelected) Color(0xFF1A73E8) else Color.White,
-                        border = if (isSelected) null else androidx.compose.foundation.BorderStroke(1.dp, Color.LightGray.copy(alpha = 0.5f)),
-                        shadowElevation = if (isSelected) 4.dp else 0.dp
-                    ) {
-                        Text(
-                            text = filter,
-                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                            color = if (isSelected) Color.White else Color.DarkGray,
-                            style = MaterialTheme.typography.labelLarge,
-                            fontWeight = FontWeight.Medium
+                Spacer(modifier = Modifier.height(12.dp))
+
+                OutlinedTextField(
+                    value = searchQuery,
+                    onValueChange = { searchQuery = it },
+                    modifier = Modifier.fillMaxWidth().height(52.dp),
+                    placeholder = { Text("Search opportunities...", fontSize = 14.sp, color = OppTextMuted) },
+                    leadingIcon = {
+                        Icon(
+                            Icons.Default.Search,
+                            contentDescription = null,
+                            modifier = Modifier.size(20.dp),
+                            tint = OppNavyDeep
                         )
-                    }
-                }
-            }
+                    },
+                    shape = RoundedCornerShape(12.dp),
+                    singleLine = true,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        unfocusedBorderColor = OppDividerLight,
+                        focusedBorderColor = OppNavyDeep,
+                        cursorColor = OppNavyDeep,
+                        unfocusedContainerColor = OppCardSurface,
+                        focusedContainerColor = OppCardSurface,
+                        focusedTextColor = OppTextPrimary,
+                        unfocusedTextColor = OppTextPrimary
+                    )
+                )
 
-            Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(12.dp))
 
-            if (filteredOpportunities.isEmpty()) {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text("No opportunities found", color = Color.Gray)
-                }
-            } else {
-                LazyVerticalGrid(
-                    columns = GridCells.Fixed(1),
-                    contentPadding = PaddingValues(bottom = 24.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp),
-                    modifier = Modifier.fillMaxSize()
+                LazyRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    contentPadding = PaddingValues(bottom = 8.dp)
                 ) {
-                    items(filteredOpportunities, key = { it.id }) { opp ->
-                        var visible by remember { mutableStateOf(false) }
-                        LaunchedEffect(opp) { visible = true }
-
-                        AnimatedVisibility(
-                            visible = visible,
-                            enter = fadeIn(tween(500)) + slideInVertically(tween(500)) { 20 }
+                    items(filters) { filter ->
+                        val isSelected = selectedFilter == filter
+                        Surface(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(10.dp))
+                                .clickable { selectedFilter = filter },
+                            color = if (isSelected) OppNavyDeep else OppCardSurface,
+                            border = BorderStroke(1.dp, if (isSelected) OppNavyDeep else OppDividerLight),
+                            shadowElevation = if (isSelected) 2.dp else 0.dp
                         ) {
-                            OpportunityCard(
-                                opportunity = opp,
-                                mainViewModel = mainViewModel,
-                                onApplyClick = {
-                                    selectedOpportunity = opp
-                                    showApplyDialog = true
-                                },
-                                onViewDetails = {
-                                    selectedOpportunity = opp
-                                    showDetailDialog = true
-                                }
+                            Text(
+                                text = filter,
+                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                                color = if (isSelected) OppGold else OppTextSecondary,
+                                style = MaterialTheme.typography.labelLarge,
+                                fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Medium
                             )
                         }
                     }
                 }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                if (filteredOpportunities.isEmpty()) {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Text("No opportunities found", color = OppTextMuted)
+                    }
+                } else {
+                    LazyVerticalGrid(
+                        columns = GridCells.Fixed(1),
+                        contentPadding = PaddingValues(bottom = 24.dp),
+                        verticalArrangement = Arrangement.spacedBy(14.dp),
+                        modifier = Modifier.fillMaxSize()
+                    ) {
+                        items(filteredOpportunities, key = { it.id }) { opp ->
+                            var visible by remember { mutableStateOf(false) }
+                            LaunchedEffect(opp) { visible = true }
+
+                            AnimatedVisibility(
+                                visible = visible,
+                                enter = fadeIn(tween(500)) + slideInVertically(tween(500)) { 20 }
+                            ) {
+                                OpportunityCard(
+                                    opportunity = opp,
+                                    mainViewModel = mainViewModel,
+                                    onApplyClick = {
+                                        selectedOpportunity = opp
+                                        showApplyDialog = true
+                                    },
+                                    onViewDetails = {
+                                        selectedOpportunity = opp
+                                        showDetailDialog = true
+                                    }
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (showApplyDialog && selectedOpportunity != null) {
+                ApplyFormDialog(
+                    opportunity = selectedOpportunity!!,
+                    mainViewModel = mainViewModel,
+                    onDismiss = { showApplyDialog = false },
+                    onApplySubmit = { application, uris ->
+                        mainViewModel.applyForOpportunity(application, uris)
+                        showApplyDialog = false
+                    }
+                )
+            }
+
+            if (showDetailDialog && selectedOpportunity != null) {
+                OpportunityDetailDialog(
+                    opportunity = selectedOpportunity!!,
+                    mainViewModel = mainViewModel,
+                    onDismiss = { showDetailDialog = false },
+                    onApply = {
+                        showDetailDialog = false
+                        showApplyDialog = true
+                    }
+                )
             }
         }
-
-        if (showApplyDialog && selectedOpportunity != null) {
-            ApplyFormDialog(
-                opportunity = selectedOpportunity!!,
-                mainViewModel = mainViewModel,
-                onDismiss = { showApplyDialog = false },
-                onApplySubmit = { application, uris ->
-                    mainViewModel.applyForOpportunity(application, uris)
-                    showApplyDialog = false
-                }
-            )
-        }
-
-        if (showDetailDialog && selectedOpportunity != null) {
-            OpportunityDetailDialog(
-                opportunity = selectedOpportunity!!,
-                mainViewModel = mainViewModel,
-                onDismiss = { showDetailDialog = false },
-                onApply = {
-                    showDetailDialog = false
-                    showApplyDialog = true
-                }
-            )
-        }
-    }
     }
 }
 
@@ -280,23 +320,23 @@ fun ApplyFormDialog(
     var marksheetName by remember { mutableStateOf("") }
 
     val context = LocalContext.current
-    
+
     val resumeLauncher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
-        uri?.let { 
+        uri?.let {
             resumeUri = it
-            resumeName = getFileName(context, it) ?: "Resume.pdf" 
+            resumeName = getFileName(context, it) ?: "Resume.pdf"
         }
     }
     val marksheetLauncher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
-        uri?.let { 
+        uri?.let {
             marksheetUri = it
-            marksheetName = getFileName(context, it) ?: "Marksheet.pdf" 
+            marksheetName = getFileName(context, it) ?: "Marksheet.pdf"
         }
     }
     val aadharLauncher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
-        uri?.let { 
+        uri?.let {
             aadharUri = it
-            aadharName = getFileName(context, it) ?: "Aadhar.pdf" 
+            aadharName = getFileName(context, it) ?: "Aadhar.pdf"
         }
     }
 
@@ -306,41 +346,109 @@ fun ApplyFormDialog(
     ) {
         Surface(
             modifier = Modifier.fillMaxWidth(0.94f).wrapContentHeight(),
-            shape = RoundedCornerShape(28.dp),
-            color = Color.White
+            shape = RoundedCornerShape(20.dp),
+            color = OppCardSurface
         ) {
             Column(
                 modifier = Modifier.padding(24.dp).verticalScroll(rememberScrollState()),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Text("Apply for", color = Color.Gray, style = MaterialTheme.typography.labelLarge)
-                Text(opportunity.title, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
-                
+                Text("Apply for", color = OppTextMuted, style = MaterialTheme.typography.labelLarge)
+                Text(
+                    opportunity.title,
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center,
+                    color = OppTextPrimary
+                )
+
                 Spacer(modifier = Modifier.height(24.dp))
 
-                OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text("Full Name") }, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp))
-                Spacer(modifier = Modifier.height(16.dp))
-                OutlinedTextField(value = email, onValueChange = { email = it }, label = { Text("Email") }, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp))
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    label = { Text("Full Name") },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = OppNavyDeep,
+                        unfocusedBorderColor = OppDividerLight,
+                        focusedContainerColor = OppCardSurface,
+                        focusedTextColor = OppTextPrimary,
+                        unfocusedTextColor = OppTextPrimary
+                    )
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+                OutlinedTextField(
+                    value = email,
+                    onValueChange = { email = it },
+                    label = { Text("Email") },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = OppNavyDeep,
+                        unfocusedBorderColor = OppDividerLight,
+                        focusedContainerColor = OppCardSurface,
+                        focusedTextColor = OppTextPrimary,
+                        unfocusedTextColor = OppTextPrimary
+                    )
+                )
 
                 if (opportunity.safeType == OpportunityType.Scholarship) {
-                    Spacer(modifier = Modifier.height(16.dp))
-                    OutlinedTextField(value = familyIncome, onValueChange = { familyIncome = it }, label = { Text("Annual Income") }, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), prefix = { Text("₹") })
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(12.dp))
+                    OutlinedTextField(
+                        value = familyIncome,
+                        onValueChange = { familyIncome = it },
+                        label = { Text("Annual Income") },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        prefix = { Text("₹") },
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = OppNavyDeep,
+                            unfocusedBorderColor = OppDividerLight,
+                            focusedContainerColor = OppCardSurface,
+                            focusedTextColor = OppTextPrimary,
+                            unfocusedTextColor = OppTextPrimary
+                        )
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
                     FileUploadButton("Aadhar Card", aadharName) { aadharLauncher.launch("application/pdf") }
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(12.dp))
                     FileUploadButton("Marksheet", marksheetName) { marksheetLauncher.launch("application/pdf") }
                 } else {
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(12.dp))
                     FileUploadButton("Resume", resumeName) { resumeLauncher.launch("application/pdf") }
                 }
 
-                Spacer(modifier = Modifier.height(16.dp))
-                OutlinedTextField(value = whyApply, onValueChange = { whyApply = it }, label = { Text("Why should we pick you?") }, modifier = Modifier.fillMaxWidth().height(120.dp), shape = RoundedCornerShape(12.dp), maxLines = 4)
+                Spacer(modifier = Modifier.height(12.dp))
+                OutlinedTextField(
+                    value = whyApply,
+                    onValueChange = { whyApply = it },
+                    label = { Text("Why should we pick you?") },
+                    modifier = Modifier.fillMaxWidth().height(120.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    maxLines = 4,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = OppNavyDeep,
+                        unfocusedBorderColor = OppDividerLight,
+                        focusedContainerColor = OppCardSurface,
+                        focusedTextColor = OppTextPrimary,
+                        unfocusedTextColor = OppTextPrimary
+                    )
+                )
 
-                Spacer(modifier = Modifier.height(32.dp))
+                Spacer(modifier = Modifier.height(28.dp))
 
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    OutlinedButton(onClick = onDismiss, modifier = Modifier.weight(1f), shape = RoundedCornerShape(12.dp)) { Text("Cancel") }
+                    OutlinedButton(
+                        onClick = onDismiss,
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = OppTextSecondary),
+                        border = BorderStroke(1.dp, OppDividerLight)
+                    ) { Text("Cancel") }
+
                     Button(
                         onClick = {
                             if (name.isNotBlank() && email.isNotBlank()) {
@@ -351,15 +459,16 @@ fun ApplyFormDialog(
                                 )
                                 onApplySubmit(
                                     Application(
-                                        id = System.currentTimeMillis().toString(), 
-                                        opportunity = opportunity, 
-                                        applicantName = name, 
-                                        applicantEmail = email, 
-                                        whyApply = whyApply, 
-                                        resumeFileName = resumeName.ifEmpty { null }, 
-                                        familyIncome = familyIncome.ifEmpty { null }, 
-                                        aadharCardFileName = aadharName.ifEmpty { null }, 
-                                        marksheetFileName = marksheetName.ifEmpty { null }
+                                        id = System.currentTimeMillis().toString(),
+                                        opportunity = opportunity,
+                                        applicantName = name,
+                                        applicantEmail = email,
+                                        whyApply = whyApply,
+                                        resumeFileName = resumeName.ifEmpty { null },
+                                        familyIncome = familyIncome.ifEmpty { null },
+                                        aadharCardFileName = aadharName.ifEmpty { null },
+                                        marksheetFileName = marksheetName.ifEmpty { null },
+                                        status = "Pending"
                                     ),
                                     uris
                                 )
@@ -367,9 +476,11 @@ fun ApplyFormDialog(
                         },
                         modifier = Modifier.weight(1f),
                         shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1A73E8)),
-                        enabled = name.isNotBlank() && email.isNotBlank() && (opportunity.safeType != OpportunityType.Scholarship || (familyIncome.isNotBlank() && aadharName.isNotBlank() && marksheetName.isNotBlank()))
-                    ) { Text("Submit") }
+                        colors = ButtonDefaults.buttonColors(containerColor = OppNavyDeep),
+                        enabled = name.isNotBlank() && email.isNotBlank() &&
+                                (opportunity.safeType != OpportunityType.Scholarship ||
+                                        (familyIncome.isNotBlank() && aadharName.isNotBlank() && marksheetName.isNotBlank()))
+                    ) { Text("Submit", color = Color.White) }
                 }
             }
         }
@@ -380,53 +491,58 @@ fun ApplyFormDialog(
 fun FileUploadButton(label: String, fileName: String, onClick: () -> Unit) {
     Surface(
         modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).clickable { onClick() },
-        color = Color(0xFFF1F3F4),
-        border = androidx.compose.foundation.BorderStroke(1.dp, Color.LightGray.copy(alpha = 0.5f))
+        color = OppIvory,
+        border = BorderStroke(1.dp, if (fileName.isNotEmpty()) OppForestGreen else OppDividerLight)
     ) {
         Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-            Icon(if (fileName.isEmpty()) Icons.Default.UploadFile else Icons.Default.CheckCircle, contentDescription = null, tint = if (fileName.isEmpty()) Color.Gray else Color(0xFF34A853))
+            Icon(
+                if (fileName.isEmpty()) Icons.Default.UploadFile else Icons.Default.CheckCircle,
+                contentDescription = null,
+                tint = if (fileName.isEmpty()) OppTextMuted else OppForestGreen
+            )
             Spacer(modifier = Modifier.width(12.dp))
-            Text(if (fileName.isEmpty()) "Upload $label" else fileName, color = if (fileName.isEmpty()) Color.Gray else Color.Black, style = MaterialTheme.typography.bodyMedium)
+            Text(
+                if (fileName.isEmpty()) "Upload $label" else fileName,
+                color = if (fileName.isEmpty()) OppTextMuted else OppForestGreen,
+                style = MaterialTheme.typography.bodyMedium
+            )
         }
     }
 }
 
 @Composable
 fun OpportunityCard(
-    opportunity: Opportunity, 
-    mainViewModel: MainViewModel, 
+    opportunity: Opportunity,
+    mainViewModel: MainViewModel,
     onApplyClick: () -> Unit,
-    onViewDetails: () -> Unit = {}  // Optional callback when card is clicked
+    onViewDetails: () -> Unit = {}
 ) {
     val isSaved = mainViewModel.savedOpportunities.any { it.id == opportunity.id }
     val type = opportunity.safeType
-    val badgeColors = when (type) {
-        OpportunityType.Internship -> Pair(Color(0xFFDBEAFE), Color(0xFF3B82F6))
-        OpportunityType.Scholarship -> Pair(Color(0xFFD1FAE5), Color(0xFF10B981))
-        OpportunityType.Job -> Pair(Color(0xFFFEF3C7), Color(0xFFF59E0B))
+    val (badgeBg, badgeFg) = when (type) {
+        OpportunityType.Internship  -> Pair(OppNavyDeep.copy(alpha = 0.10f), OppNavyDeep)
+        OpportunityType.Scholarship -> Pair(OppForestGreenBg, OppForestGreen)
+        OpportunityType.Job         -> Pair(OppGoldLight, OppGold)
     }
 
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+        colors = CardDefaults.cardColors(containerColor = OppCardSurface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(
-                modifier = Modifier.fillMaxWidth(), 
-                horizontalArrangement = Arrangement.SpaceBetween, 
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Surface(
-                    color = badgeColors.first, 
-                    shape = RoundedCornerShape(6.dp)
-                ) {
+                Surface(color = badgeBg, shape = RoundedCornerShape(6.dp)) {
                     Text(
-                        type.name, 
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp), 
-                        style = MaterialTheme.typography.labelSmall, 
-                        color = badgeColors.second, 
+                        type.name,
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = badgeFg,
                         fontWeight = FontWeight.SemiBold
                     )
                 }
@@ -435,84 +551,77 @@ fun OpportunityCard(
                     modifier = Modifier.size(32.dp)
                 ) {
                     Icon(
-                        if (isSaved) Icons.Filled.Bookmark else Icons.Outlined.BookmarkBorder, 
-                        contentDescription = null, 
-                        tint = if (isSaved) Color(0xFF3B82F6) else Color(0xFF9CA3AF),
+                        if (isSaved) Icons.Filled.Bookmark else Icons.Outlined.BookmarkBorder,
+                        contentDescription = null,
+                        tint = if (isSaved) OppGold else OppTextMuted,
                         modifier = Modifier.size(20.dp)
                     )
                 }
             }
-            
-            Spacer(modifier = Modifier.height(12.dp))
-            
-            // Clickable content area for viewing details
+
+            Spacer(modifier = Modifier.height(10.dp))
+
             Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { onViewDetails() }
+                modifier = Modifier.fillMaxWidth().clickable { onViewDetails() }
             ) {
                 Text(
-                    opportunity.title, 
-                    style = MaterialTheme.typography.titleMedium, 
+                    opportunity.title,
+                    style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold,
-                    color = Color(0xFF111827),
+                    color = OppTextPrimary,
                     maxLines = 2
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    opportunity.company, 
-                    color = Color(0xFF6B7280), 
+                    opportunity.company,
+                    color = OppTextSecondary,
                     style = MaterialTheme.typography.bodySmall
                 )
-                
-                Spacer(modifier = Modifier.height(12.dp))
-                
+
+                Spacer(modifier = Modifier.height(10.dp))
+
                 Row(
-                    modifier = Modifier.fillMaxWidth(), 
+                    modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     InfoItem(Icons.Default.LocationOn, opportunity.location)
                     opportunity.stipendOrSalary?.let { InfoItem(Icons.Default.Payments, it) }
                 }
-                
+
                 if (opportunity.tags.isNotEmpty()) {
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(10.dp))
                     FlowRow(
                         horizontalArrangement = Arrangement.spacedBy(6.dp),
                         verticalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
                         opportunity.tags.take(3).forEach { tag ->
-                            Surface(
-                                color = Color(0xFFF3F4F6),
-                                shape = RoundedCornerShape(4.dp)
-                            ) {
+                            Surface(color = OppGoldLight, shape = RoundedCornerShape(4.dp)) {
                                 Text(
                                     tag,
                                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                                     style = MaterialTheme.typography.labelSmall,
-                                    color = Color(0xFF6B7280)
+                                    color = OppTextSecondary
                                 )
                             }
                         }
                     }
                 }
             }
-            
+
             Spacer(modifier = Modifier.height(12.dp))
-            
+
             Button(
-                onClick = onApplyClick, 
-                modifier = Modifier.fillMaxWidth(), 
-                shape = RoundedCornerShape(8.dp), 
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF3B82F6))
+                onClick = onApplyClick,
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(8.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = OppNavyDeep)
             ) {
-                Text("Apply Now", fontWeight = FontWeight.Medium, style = MaterialTheme.typography.bodyMedium)
+                Text("Apply Now", fontWeight = FontWeight.Medium, color = Color.White)
             }
         }
     }
 }
 
-// 📋 Opportunity Detail Dialog - Shows full opportunity details in-app
 @Composable
 fun OpportunityDetailDialog(
     opportunity: Opportunity,
@@ -522,219 +631,110 @@ fun OpportunityDetailDialog(
 ) {
     val isSaved = mainViewModel.savedOpportunities.any { it.id == opportunity.id }
     val type = opportunity.safeType
-    val badgeColors = when (type) {
-        OpportunityType.Internship -> Pair(Color(0xFFE8F0FE), Color(0xFF1A73E8))
-        OpportunityType.Scholarship -> Pair(Color(0xFFE6F4EA), Color(0xFF34A853))
-        OpportunityType.Job -> Pair(Color(0xFFFEF7E0), Color(0xFFFBBC04))
-    }
-    
+
     Dialog(
         onDismissRequest = onDismiss,
         properties = DialogProperties(usePlatformDefaultWidth = false)
     ) {
         Surface(
-            modifier = Modifier
-                .fillMaxWidth(0.95f)
-                .wrapContentHeight(),
-            shape = RoundedCornerShape(24.dp),
-            color = Color.White
+            modifier = Modifier.fillMaxWidth(0.94f).wrapContentHeight(),
+            shape = RoundedCornerShape(20.dp),
+            color = OppCardSurface
         ) {
             Column(
                 modifier = Modifier
                     .padding(24.dp)
                     .verticalScroll(rememberScrollState())
             ) {
-                // Header with type badge and close button
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = Alignment.Top
                 ) {
-                    Surface(
-                        color = badgeColors.first, 
-                        shape = RoundedCornerShape(8.dp)
-                    ) {
-                        Text(
-                            type.name, 
-                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp), 
-                            style = MaterialTheme.typography.labelMedium, 
-                            color = badgeColors.second, 
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                    
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        // Save button
-                        IconButton(onClick = { 
-                            mainViewModel.toggleSaveOpportunity(opportunity)
-                        }) {
-                            Icon(
-                                if (isSaved) Icons.Filled.Bookmark else Icons.Outlined.BookmarkBorder, 
-                                contentDescription = if (isSaved) "Unsave" else "Save",
-                                tint = if (isSaved) Color(0xFF1A73E8) else Color.Gray,
-                                modifier = Modifier.size(28.dp)
+                    Column(modifier = Modifier.weight(1f)) {
+                        val (badgeBg, badgeFg) = when (type) {
+                            OpportunityType.Internship  -> Pair(OppNavyDeep.copy(alpha = 0.10f), OppNavyDeep)
+                            OpportunityType.Scholarship -> Pair(OppForestGreenBg, OppForestGreen)
+                            OpportunityType.Job         -> Pair(OppGoldLight, OppGold)
+                        }
+                        Surface(color = badgeBg, shape = RoundedCornerShape(6.dp)) {
+                            Text(
+                                type.name,
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = badgeFg,
+                                fontWeight = FontWeight.SemiBold
                             )
                         }
-                        // Close button
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(opportunity.title, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = OppTextPrimary)
+                        Text(opportunity.company, style = MaterialTheme.typography.bodyMedium, color = OppTextSecondary)
+                    }
+                    Row {
+                        IconButton(onClick = { mainViewModel.toggleSaveOpportunity(opportunity) }) {
+                            Icon(
+                                if (isSaved) Icons.Filled.Bookmark else Icons.Outlined.BookmarkBorder,
+                                contentDescription = null,
+                                tint = if (isSaved) OppGold else OppTextMuted
+                            )
+                        }
                         IconButton(onClick = onDismiss) {
-                            Icon(
-                                Icons.Default.Close, 
-                                contentDescription = "Close",
-                                tint = Color.Gray,
-                                modifier = Modifier.size(28.dp)
-                            )
+                            Icon(Icons.Default.Close, contentDescription = "Close", tint = OppTextMuted)
                         }
                     }
                 }
-                
+
                 Spacer(modifier = Modifier.height(20.dp))
-                
-                // Title and Company
-                Text(
-                    opportunity.title, 
-                    style = MaterialTheme.typography.headlineSmall, 
-                    fontWeight = FontWeight.ExtraBold,
-                    color = Color(0xFF202124)
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    opportunity.company, 
-                    style = MaterialTheme.typography.titleMedium,
-                    color = Color(0xFF5F6368),
-                    fontWeight = FontWeight.Medium
-                )
-                
-                Spacer(modifier = Modifier.height(24.dp))
-                
-                // Details Section
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    // Location
-                    DetailRow(
-                        icon = Icons.Default.LocationOn,
-                        label = "Location",
-                        value = opportunity.location
-                    )
-                    
-                    // Stipend/Salary
-                    opportunity.stipendOrSalary?.let {
-                        DetailRow(
-                            icon = Icons.Default.Payments,
-                            label = if (type == OpportunityType.Scholarship) "Amount" else "Stipend/Salary",
-                            value = it
-                        )
-                    }
-                    
-                    // Date/Deadline
-                    if (opportunity.date.isNotBlank()) {
-                        DetailRow(
-                            icon = Icons.Default.CalendarToday,
-                            label = "Posted Date",
-                            value = opportunity.date
-                        )
-                    }
-                    
-                    // Min CGPA
-                    opportunity.minCgpa?.let {
-                        DetailRow(
-                            icon = Icons.Default.School,
-                            label = "Minimum CGPA Required",
-                            value = "%.2f".format(it)
-                        )
-                    }
+                HorizontalDivider(color = OppDividerLight)
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Row(horizontalArrangement = Arrangement.spacedBy(20.dp)) {
+                    InfoItem(Icons.Default.LocationOn, opportunity.location)
+                    opportunity.stipendOrSalary?.let { InfoItem(Icons.Default.Payments, it) }
                 }
-                
-                // Tags
-                if (opportunity.tags.isNotEmpty()) {
-                    Spacer(modifier = Modifier.height(20.dp))
-                    Text(
-                        "Tags",
-                        style = MaterialTheme.typography.labelLarge,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFF202124)
-                    )
+
+                if (opportunity.minCgpa != null && opportunity.minCgpa > 0) {
                     Spacer(modifier = Modifier.height(8.dp))
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
+                    InfoItem(Icons.Default.School, "Min CGPA: ${opportunity.minCgpa}")
+                }
+
+                if (opportunity.date.isNotBlank()) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    InfoItem(Icons.Default.CalendarToday, "Deadline: ${opportunity.date}")
+                }
+
+                if (opportunity.tags.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text("Skills Required", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold, color = OppTextPrimary)
+                    Spacer(modifier = Modifier.height(8.dp))
+                    FlowRow(
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        opportunity.tags.take(5).forEach { tag ->
-                            Surface(
-                                color = Color(0xFFF1F3F4),
-                                shape = RoundedCornerShape(16.dp)
-                            ) {
+                        opportunity.tags.forEach { tag ->
+                            Surface(color = OppGoldLight, shape = RoundedCornerShape(6.dp)) {
                                 Text(
                                     tag,
-                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = Color(0xFF5F6368)
+                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = OppTextSecondary
                                 )
                             }
                         }
                     }
                 }
-                
-                Spacer(modifier = Modifier.height(32.dp))
-                
-                // Action Buttons
-                Row(
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                Button(
+                    onClick = onApply,
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = OppNavyDeep)
                 ) {
-                    OutlinedButton(
-                        onClick = onDismiss,
-                        modifier = Modifier.weight(1f),
-                        shape = RoundedCornerShape(12.dp)
-                    ) {
-                        Text("Close")
-                    }
-                    
-                    Button(
-                        onClick = {
-                            onDismiss()
-                            onApply()
-                        },
-                        modifier = Modifier.weight(1f),
-                        shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1A73E8))
-                    ) {
-                        Text("Apply Now", fontWeight = FontWeight.Bold)
-                    }
+                    Text("Apply Now", fontWeight = FontWeight.SemiBold, color = Color.White)
                 }
             }
-        }
-    }
-}
-
-// Helper composable for detail rows
-@Composable
-private fun DetailRow(icon: ImageVector, label: String, value: String) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.Top
-    ) {
-        Icon(
-            icon,
-            contentDescription = null,
-            modifier = Modifier.size(20.dp),
-            tint = Color(0xFF1A73E8)
-        )
-        Spacer(modifier = Modifier.width(12.dp))
-        Column {
-            Text(
-                label,
-                style = MaterialTheme.typography.labelMedium,
-                color = Color(0xFF5F6368)
-            )
-            Text(
-                value,
-                style = MaterialTheme.typography.bodyLarge,
-                color = Color(0xFF202124),
-                fontWeight = FontWeight.Medium
-            )
         }
     }
 }
@@ -742,45 +742,8 @@ private fun DetailRow(icon: ImageVector, label: String, value: String) {
 @Composable
 fun InfoItem(icon: ImageVector, text: String) {
     Row(verticalAlignment = Alignment.CenterVertically) {
-        Icon(icon, contentDescription = null, tint = Color(0xFF6B7280), modifier = Modifier.size(14.dp))
+        Icon(icon, contentDescription = null, tint = OppTextMuted, modifier = Modifier.size(14.dp))
         Spacer(modifier = Modifier.width(4.dp))
-        Text(text, color = Color(0xFF6B7280), style = MaterialTheme.typography.bodySmall)
-    }
-}
-
-@Composable
-fun FlowRow(
-    modifier: Modifier = Modifier,
-    mainAxisSpacing: androidx.compose.ui.unit.Dp = 0.dp,
-    crossAxisSpacing: androidx.compose.ui.unit.Dp = 0.dp,
-    content: @Composable () -> Unit
-) {
-    androidx.compose.ui.layout.Layout(
-        modifier = modifier,
-        content = content
-    ) { measurables, constraints ->
-        val placeables = measurables.map { it.measure(constraints) }
-        val layoutWidth = constraints.maxWidth
-        var currentX = 0
-        var currentY = 0
-        var maxHeightInRow = 0
-        val positions = mutableListOf<Pair<Int, Int>>()
-
-        placeables.forEach { placeable ->
-            if (currentX + placeable.width > layoutWidth) {
-                currentX = 0
-                currentY += maxHeightInRow + crossAxisSpacing.roundToPx()
-                maxHeightInRow = 0
-            }
-            positions.add(currentX to currentY)
-            currentX += placeable.width + mainAxisSpacing.roundToPx()
-            maxHeightInRow = maxOf(maxHeightInRow, placeable.height)
-        }
-
-        layout(layoutWidth, currentY + maxHeightInRow) {
-            placeables.zip(positions).forEach { (placeable, pos) ->
-                placeable.place(pos.first, pos.second)
-            }
-        }
+        Text(text, style = MaterialTheme.typography.bodySmall, color = OppTextSecondary, maxLines = 1, overflow = TextOverflow.Ellipsis)
     }
 }

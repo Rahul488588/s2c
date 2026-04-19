@@ -14,6 +14,7 @@ import androidx.navigation.navArgument
 import com.example.skill2career.ui.theme.SKILL2careerTheme
 
 import androidx.lifecycle.viewmodel.compose.viewModel
+import kotlinx.coroutines.delay
 
 class MainActivity : ComponentActivity() {
 
@@ -31,9 +32,17 @@ class MainActivity : ComponentActivity() {
                 ) {
                     val navController = rememberNavController()
 
+                    // Determine start destination based on login state
+                    val user = mainViewModel.currentUser.value
+                    val startDestination = if (user != null) {
+                        if (user.role == "Student") "studentScreen" else "admin"
+                    } else {
+                        "login"
+                    }
+
                     NavHost(
                         navController = navController,
-                        startDestination = "login"
+                        startDestination = startDestination
                     ) {
                         // LOGIN
                         composable("login") {
@@ -80,6 +89,26 @@ class MainActivity : ComponentActivity() {
                         // ADMIN DASHBOARD
                         composable("admin") {
                             AdminScreen(navController = navController, mainViewModel = mainViewModel)
+                        }
+
+                        // ADMIN APPLICATIONS
+                        composable("adminApplications") {
+                            AdminApplicationsScreen(navController = navController, mainViewModel = mainViewModel)
+                        }
+
+                        // ADMIN MANAGE CONTENT
+                        composable("adminManage") {
+                            AdminManageScreen(navController = navController, mainViewModel = mainViewModel)
+                        }
+
+                        // ADMIN AI DISCOVER
+                        composable("adminAI") {
+                            AdminAIScreen(navController = navController, mainViewModel = mainViewModel)
+                        }
+
+                        // ADMIN SUPER ADMIN
+                        composable("adminSuper") {
+                            AdminSuperScreen(navController = navController, mainViewModel = mainViewModel)
                         }
 
                         // OPPORTUNITIES - single route with optional parameter

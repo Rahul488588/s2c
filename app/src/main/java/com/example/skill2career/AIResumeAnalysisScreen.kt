@@ -4,17 +4,17 @@ import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AttachFile
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.CloudUpload
-import androidx.compose.material.icons.filled.Description
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -26,12 +26,26 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.skill2career.network.SkillsGapAnalysis
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import okhttp3.MediaType.Companion.toMediaTypeOrNull
-import okhttp3.MultipartBody
-import okhttp3.RequestBody.Companion.asRequestBody
-import java.io.File
-import java.io.FileOutputStream
+import kotlinx.coroutines.withContext
+
+// ─── Classical Professional Palette ────────────────────────────────────────────
+private val AiNavyDeep      = Color(0xFF1B2A4A)
+private val AiNavyMid       = Color(0xFF2E3D5E)
+private val AiGold          = Color(0xFFC9A84C)
+private val AiGoldLight     = Color(0xFFF0EAD5)
+private val AiIvory         = Color(0xFFF5F0E8)
+private val AiCardSurface   = Color(0xFFFAF8F4)
+private val AiTextPrimary   = Color(0xFF1A1A2E)
+private val AiTextSecondary = Color(0xFF4A4F6A)
+private val AiTextMuted     = Color(0xFF8B8FA8)
+private val AiDividerLight  = Color(0xFFD4C5A9)
+private val AiForestGreen   = Color(0xFF2D5A3D)
+private val AiForestGreenBg = Color(0xFFD5E8DC)
+private val AiBurgundy      = Color(0xFF7A2A35)
+private val AiBurgundyBg    = Color(0xFFF0D5D5)
+// ───────────────────────────────────────────────────────────────────────────────
 
 enum class AnalysisTab {
     ResumeAnalysis,
@@ -43,42 +57,72 @@ enum class AnalysisTab {
 fun AIResumeAnalysisScreen(navController: NavController, mainViewModel: MainViewModel) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    
-    // Tab state
+
     var selectedTab by remember { mutableStateOf(AnalysisTab.ResumeAnalysis) }
-    
-    // Common state
+
     var resumeText by remember { mutableStateOf("") }
     var isUploading by remember { mutableStateOf(false) }
-    var selectedFileUri by remember { mutableStateOf<Uri?>(null) }
     var selectedFileName by remember { mutableStateOf<String?>(null) }
     var uploadError by remember { mutableStateOf<String?>(null) }
-    
-    // Resume Analysis tab state
+
     var analysisResult by remember { mutableStateOf("") }
     var isAnalyzing by remember { mutableStateOf(false) }
-    
-    // Skills Gap tab state
+
     var targetRole by remember { mutableStateOf("") }
     var skillsGapResult by remember { mutableStateOf<SkillsGapAnalysis?>(null) }
     var isAnalyzingGap by remember { mutableStateOf(false) }
 
+    val filePickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        uri?.let {
+            val fileName = getFileName(context, it) ?: "resume.pdf"
+            selectedFileName = fileName
+            uploadError = null
+
+            scope.launch {
+                isUploading = true
+                try {
+                    val extracted = withContext(Dispatchers.IO) {
+                        extractTextFromUri(context, it, fileName)
+                    }
+                    if (extracted != null) {
+                        resumeText = extracted
+                        uploadError = null
+                    } else {
+                        uploadError = "Could not read file. Try a .txt file or paste your resume text below."
+                    }
+                } catch (e: Exception) {
+                    uploadError = "Error reading file: ${e.message}"
+                } finally {
+                    isUploading = false
+                }
+            }
+        }
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("AI Resume Analysis", fontWeight = FontWeight.Bold) },
+                title = {
+                    Text(
+                        "AI Resume Analysis",
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color.White
+                    )
+                },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = AiGold)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color(0xFF1A73E8),
-                    titleContentColor = Color.White,
-                    navigationIconContentColor = Color.White
+                    containerColor = AiNavyDeep,
+                    titleContentColor = Color.White
                 )
             )
-        }
+        },
+        containerColor = AiIvory
     ) { paddingValues ->
         Column(
             modifier = Modifier
@@ -88,128 +132,98 @@ fun AIResumeAnalysisScreen(navController: NavController, mainViewModel: MainView
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Info Card
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFFE3F2FD))
-            ) {
-                Column(
-                    modifier = Modifier.padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Text(
-                        text = "AI Resume Analysis",
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFF1A73E8)
-                    )
-                    Text(
-                        text = "Upload your resume or paste the text to get AI-powered analysis. Switch tabs to get career recommendations or identify skills gaps for your target role.",
-                        fontSize = 14.sp,
-                        color = Color(0xFF5F6368)
-                    )
-                }
-            }
-            
-            // Tab Row
+
+
             TabRow(
                 selectedTabIndex = selectedTab.ordinal,
                 modifier = Modifier.fillMaxWidth(),
-                containerColor = Color.White,
-                contentColor = Color(0xFF1A73E8)
+                containerColor = AiNavyDeep,
+                contentColor = AiGold,
+                divider = { HorizontalDivider(color = AiNavyMid) }
             ) {
                 Tab(
                     selected = selectedTab == AnalysisTab.ResumeAnalysis,
                     onClick = { selectedTab = AnalysisTab.ResumeAnalysis },
-                    text = { Text("Resume Analysis") }
+                    text = {
+                        Text(
+                            "Resume Analysis",
+                            fontWeight = if (selectedTab == AnalysisTab.ResumeAnalysis) FontWeight.SemiBold else FontWeight.Normal,
+                            color = if (selectedTab == AnalysisTab.ResumeAnalysis) AiGold else Color(0xFF8BA3CC)
+                        )
+                    },
+                    selectedContentColor = AiGold,
+                    unselectedContentColor = Color(0xFF8BA3CC)
                 )
                 Tab(
                     selected = selectedTab == AnalysisTab.SkillsGap,
                     onClick = { selectedTab = AnalysisTab.SkillsGap },
-                    text = { Text("Skills Gap") }
+                    text = {
+                        Text(
+                            "Skills Gap",
+                            fontWeight = if (selectedTab == AnalysisTab.SkillsGap) FontWeight.SemiBold else FontWeight.Normal,
+                            color = if (selectedTab == AnalysisTab.SkillsGap) AiGold else Color(0xFF8BA3CC)
+                        )
+                    },
+                    selectedContentColor = AiGold,
+                    unselectedContentColor = Color(0xFF8BA3CC)
                 )
             }
 
-            // Professional File Upload Section
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = Color.White),
-                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                colors = CardDefaults.cardColors(containerColor = AiCardSurface),
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                shape = RoundedCornerShape(16.dp)
             ) {
                 Column(
                     modifier = Modifier.padding(20.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    // Header
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.CloudUpload,
-                            contentDescription = null,
-                            modifier = Modifier.size(32.dp),
-                            tint = Color(0xFF1A73E8)
-                        )
+                        Box(
+                            modifier = Modifier
+                                .size(44.dp)
+                                .background(AiNavyDeep.copy(alpha = 0.09f), RoundedCornerShape(12.dp)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.CloudUpload,
+                                contentDescription = null,
+                                modifier = Modifier.size(24.dp),
+                                tint = AiNavyDeep
+                            )
+                        }
                         Column {
                             Text(
-                                text = "Upload Your Resume",
+                                text = "Upload Resume",
                                 fontSize = 16.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color(0xFF202124)
+                                fontWeight = FontWeight.SemiBold,
+                                color = AiTextPrimary
                             )
                             Text(
-                                text = "PDF, DOCX, DOC, or TXT files supported",
+                                text = "TXT files work best. PDF/DOCX: paste text below.",
                                 fontSize = 12.sp,
-                                color = Color(0xFF5F6368)
+                                color = AiTextMuted
                             )
                         }
                     }
-                    
-                    Divider(color = Color(0xFFE0E0E0))
-                    
-                    // File Picker Button
-                    val filePickerLauncher = rememberLauncherForActivityResult(
-                        contract = ActivityResultContracts.GetContent()
-                    ) { uri: Uri? ->
-                        uri?.let {
-                            selectedFileUri = it
-                            val fileName = getFileName(context, it) ?: "resume.pdf"
-                            selectedFileName = fileName
-                            uploadError = null
-                            
-                            // Auto-upload and extract text (background processing)
-                            scope.launch {
-                                isUploading = true
-                                try {
-                                    val extractedText = uploadAndExtractText(context, mainViewModel, it, fileName)
-                                    if (extractedText != null) {
-                                        resumeText = extractedText
-                                        uploadError = null
-                                    } else {
-                                        uploadError = "Failed to extract text from file"
-                                    }
-                                } catch (e: Exception) {
-                                    uploadError = "Error: ${e.message}"
-                                } finally {
-                                    isUploading = false
-                                }
-                            }
-                        }
-                    }
-                    
-                    // Upload Area
+
+                    HorizontalDivider(color = AiDividerLight)
+
                     Surface(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(120.dp)
+                            .height(100.dp)
                             .clickable(enabled = !isUploading) { filePickerLauncher.launch("*/*") },
                         shape = RoundedCornerShape(12.dp),
-                        color = if (selectedFileName != null) Color(0xFFE8F5E9) else Color(0xFFF5F5F5),
-                        border = if (selectedFileName != null) 
-                            BorderStroke(2.dp, Color(0xFF4CAF50))
-                        else 
-                            BorderStroke(2.dp, Color(0xFF1A73E8).copy(alpha = 0.3f))
+                        color = if (selectedFileName != null) AiForestGreenBg else AiIvory,
+                        border = BorderStroke(
+                            2.dp,
+                            if (selectedFileName != null) AiForestGreen else AiNavyDeep.copy(alpha = 0.3f)
+                        )
                     ) {
                         Column(
                             modifier = Modifier.fillMaxSize(),
@@ -219,101 +233,66 @@ fun AIResumeAnalysisScreen(navController: NavController, mainViewModel: MainView
                             when {
                                 isUploading -> {
                                     CircularProgressIndicator(
-                                        modifier = Modifier.size(36.dp),
-                                        color = Color(0xFF1A73E8),
+                                        modifier = Modifier.size(32.dp),
+                                        color = AiNavyDeep,
                                         strokeWidth = 3.dp
                                     )
-                                    Spacer(modifier = Modifier.height(12.dp))
-                                    Text(
-                                        text = "Processing Resume...",
-                                        fontSize = 14.sp,
-                                        color = Color(0xFF5F6368)
-                                    )
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Text("Reading file...", fontSize = 13.sp, color = AiTextSecondary)
                                 }
                                 selectedFileName != null -> {
                                     Icon(
                                         imageVector = Icons.Default.CheckCircle,
                                         contentDescription = null,
-                                        modifier = Modifier.size(40.dp),
-                                        tint = Color(0xFF4CAF50)
+                                        modifier = Modifier.size(32.dp),
+                                        tint = AiForestGreen
                                     )
-                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Spacer(modifier = Modifier.height(6.dp))
                                     Text(
                                         text = selectedFileName!!,
-                                        fontSize = 14.sp,
+                                        fontSize = 13.sp,
                                         fontWeight = FontWeight.Medium,
-                                        color = Color(0xFF2E7D32)
+                                        color = AiForestGreen
                                     )
-                                    Text(
-                                        text = "Click to change file",
-                                        fontSize = 12.sp,
-                                        color = Color(0xFF5F6368)
-                                    )
+                                    Text(text = "Tap to change", fontSize = 11.sp, color = AiTextMuted)
                                 }
                                 else -> {
                                     Icon(
                                         imageVector = Icons.Default.AttachFile,
                                         contentDescription = null,
-                                        modifier = Modifier.size(40.dp),
-                                        tint = Color(0xFF1A73E8)
+                                        modifier = Modifier.size(32.dp),
+                                        tint = AiNavyDeep
                                     )
-                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Spacer(modifier = Modifier.height(6.dp))
                                     Text(
-                                        text = "Click to select file",
+                                        text = "Tap to select file",
                                         fontSize = 14.sp,
                                         fontWeight = FontWeight.Medium,
-                                        color = Color(0xFF202124)
-                                    )
-                                    Text(
-                                        text = "Drop your resume here or browse",
-                                        fontSize = 12.sp,
-                                        color = Color(0xFF5F6368)
+                                        color = AiTextPrimary
                                     )
                                 }
                             }
                         }
                     }
-                    
-                    // Show error
+
                     if (uploadError != null) {
                         Card(
-                            colors = CardDefaults.cardColors(containerColor = Color(0xFFFFEBEE)),
-                            modifier = Modifier.fillMaxWidth()
+                            colors = CardDefaults.cardColors(containerColor = AiBurgundyBg),
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(8.dp)
                         ) {
                             Text(
                                 text = uploadError!!,
                                 fontSize = 13.sp,
-                                color = Color(0xFFC62828),
+                                color = AiBurgundy,
                                 modifier = Modifier.padding(12.dp)
                             )
-                        }
-                    }
-                    
-                    // File format hints
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally)
-                    ) {
-                        listOf("PDF", "DOCX", "DOC", "TXT").forEach { format ->
-                            Surface(
-                                shape = RoundedCornerShape(4.dp),
-                                color = Color(0xFFE0E0E0)
-                            ) {
-                                Text(
-                                    text = format,
-                                    fontSize = 11.sp,
-                                    color = Color(0xFF5F6368),
-                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                                )
-                            }
                         }
                     }
                 }
             }
 
-            // Resume Analysis Tab Content
             if (selectedTab == AnalysisTab.ResumeAnalysis) {
-                // Analyze Button
                 Button(
                     onClick = {
                         if (resumeText.isNotBlank()) {
@@ -321,82 +300,84 @@ fun AIResumeAnalysisScreen(navController: NavController, mainViewModel: MainView
                             mainViewModel.analyzeResume(resumeText) { success, result ->
                                 isAnalyzing = false
                                 if (success && result != null) {
-                                    analysisResult = """
-                                        Summary:
-                                        ${result.summary}
-                                        
-                                        Strengths:
-                                        ${result.strengths.joinToString("\n- ", "- ")}
-                                        
-                                        Areas for Improvement:
-                                        ${result.improvements.joinToString("\n- ", "- ")}
-                                        
-                                        Recommended Careers:
-                                        ${result.recommendedCareers.joinToString("\n- ", "- ")}
-                                    """.trimIndent()
+                                    analysisResult = buildString {
+                                        appendLine("Summary:")
+                                        appendLine(result.summary)
+                                        appendLine()
+                                        appendLine("Strengths:")
+                                        result.strengths.forEach { appendLine("• $it") }
+                                        appendLine()
+                                        appendLine("Areas for Improvement:")
+                                        result.improvements.forEach { appendLine("• $it") }
+                                        appendLine()
+                                        appendLine("Recommended Careers:")
+                                        result.recommendedCareers.forEach { appendLine("• $it") }
+                                    }.trimEnd()
                                 } else {
-                                    analysisResult = "Failed to analyze resume. Please try again."
+                                    analysisResult = "Failed to analyze resume. Please check your internet connection and try again."
                                 }
                             }
                         }
                     },
                     modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = AiNavyDeep),
                     enabled = resumeText.isNotBlank() && !isAnalyzing
                 ) {
                     if (isAnalyzing) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(20.dp),
-                            color = Color.White
-                        )
+                        CircularProgressIndicator(modifier = Modifier.size(20.dp), color = Color.White, strokeWidth = 2.dp)
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("Analyzing...")
+                        Text("Analyzing...", color = Color.White)
                     } else {
-                        Text("Analyze Resume")
+                        Text("Analyze Resume", color = Color.White, fontWeight = FontWeight.SemiBold)
                     }
                 }
 
-                // Analysis Result
                 if (analysisResult.isNotBlank()) {
                     Card(
                         modifier = Modifier.fillMaxWidth(),
-                        colors = CardDefaults.cardColors(containerColor = Color(0xFFF8F9FA))
+                        colors = CardDefaults.cardColors(containerColor = AiCardSurface),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                        shape = RoundedCornerShape(16.dp)
                     ) {
-                        Column(
-                            modifier = Modifier.padding(16.dp)
-                        ) {
+                        Column(modifier = Modifier.padding(16.dp)) {
                             Text(
                                 text = "Analysis Results",
                                 fontSize = 16.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color(0xFF1A73E8)
+                                fontWeight = FontWeight.SemiBold,
+                                color = AiNavyDeep
                             )
-                            Spacer(modifier = Modifier.height(12.dp))
+                            HorizontalDivider(modifier = Modifier.padding(vertical = 10.dp), color = AiDividerLight)
                             Text(
                                 text = analysisResult,
                                 fontSize = 14.sp,
-                                lineHeight = 20.sp
+                                lineHeight = 22.sp,
+                                color = AiTextSecondary
                             )
                         }
                     }
                 }
             }
-            
-            // Skills Gap Tab Content
+
             if (selectedTab == AnalysisTab.SkillsGap) {
-                // Target Role Input
                 OutlinedTextField(
                     value = targetRole,
                     onValueChange = { targetRole = it },
-                    label = { Text("Target Role (e.g., Senior Software Engineer)") },
-                    placeholder = { Text("Enter the job role you want to apply for...") },
+                    label = { Text("Target Role") },
+                    placeholder = { Text("e.g. Senior Software Engineer, Data Analyst...", color = AiTextMuted) },
                     modifier = Modifier.fillMaxWidth(),
                     enabled = !isAnalyzingGap,
-                    singleLine = true
+                    singleLine = true,
+                    shape = RoundedCornerShape(12.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = AiNavyDeep,
+                        unfocusedBorderColor = AiDividerLight,
+                        focusedLabelColor = AiNavyDeep,
+                        focusedTextColor = AiTextPrimary,
+                        unfocusedTextColor = AiTextPrimary
+                    )
                 )
-                
-                Spacer(modifier = Modifier.height(8.dp))
-                
-                // Analyze Skills Gap Button
+
                 Button(
                     onClick = {
                         if (resumeText.isNotBlank() && targetRole.isNotBlank()) {
@@ -410,110 +391,99 @@ fun AIResumeAnalysisScreen(navController: NavController, mainViewModel: MainView
                         }
                     },
                     modifier = Modifier.fillMaxWidth(),
-                    enabled = resumeText.isNotBlank() && targetRole.isNotBlank() && !isAnalyzingGap,
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF34A853))
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = AiNavyDeep),
+                    enabled = resumeText.isNotBlank() && targetRole.isNotBlank() && !isAnalyzingGap
                 ) {
                     if (isAnalyzingGap) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(20.dp),
-                            color = Color.White
-                        )
+                        CircularProgressIndicator(modifier = Modifier.size(20.dp), color = Color.White, strokeWidth = 2.dp)
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("Analyzing Gap...")
+                        Text("Analyzing Gap...", color = Color.White)
                     } else {
-                        Text("Analyze Skills Gap")
+                        Text("Analyze Skills Gap", color = Color.White, fontWeight = FontWeight.SemiBold)
                     }
                 }
-                
-                // Skills Gap Result
+
                 skillsGapResult?.let { result ->
                     Card(
                         modifier = Modifier.fillMaxWidth(),
-                        colors = CardDefaults.cardColors(containerColor = Color(0xFFF8F9FA))
+                        colors = CardDefaults.cardColors(containerColor = AiCardSurface),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                        shape = RoundedCornerShape(16.dp)
                     ) {
                         Column(
                             modifier = Modifier.padding(16.dp),
                             verticalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
-                            // Title
                             Text(
-                                text = "Skills Gap Analysis: ${result.targetRole}",
+                                text = "Skills Gap: ${result.targetRole}",
                                 fontSize = 16.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color(0xFF1A73E8)
+                                fontWeight = FontWeight.SemiBold,
+                                color = AiNavyDeep
                             )
-                            
-                            // Current Skills
-                            Text(
-                                text = "✅ Your Current Skills:",
-                                fontSize = 14.sp,
-                                fontWeight = FontWeight.Medium,
-                                color = Color(0xFF34A853)
-                            )
-                            Text(
-                                text = result.currentSkills.joinToString(", "),
-                                fontSize = 13.sp,
-                                color = Color(0xFF5F6368)
-                            )
-                            
-                            // Missing Skills (Highlighted in red)
+                            HorizontalDivider(color = AiDividerLight)
+
+                            if (result.currentSkills.isNotEmpty()) {
+                                Text(
+                                    text = "Your Current Skills:",
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    color = AiForestGreen
+                                )
+                                Text(
+                                    text = result.currentSkills.joinToString(", "),
+                                    fontSize = 13.sp,
+                                    color = AiTextSecondary
+                                )
+                            }
+
                             if (result.missingSkills.isNotEmpty()) {
                                 Card(
-                                    colors = CardDefaults.cardColors(containerColor = Color(0xFFFFEBEE))
+                                    colors = CardDefaults.cardColors(containerColor = AiBurgundyBg),
+                                    shape = RoundedCornerShape(10.dp)
                                 ) {
                                     Column(modifier = Modifier.padding(12.dp)) {
                                         Text(
-                                            text = "⚠️ Skills You Need to Learn:",
+                                            text = "Skills to Learn:",
                                             fontSize = 14.sp,
                                             fontWeight = FontWeight.Medium,
-                                            color = Color(0xFFC62828)
+                                            color = AiBurgundy
                                         )
+                                        Spacer(modifier = Modifier.height(4.dp))
                                         result.missingSkills.forEach { skill ->
-                                            Text(
-                                                text = "• $skill",
-                                                fontSize = 13.sp,
-                                                color = Color(0xFFC62828)
-                                            )
+                                            Text(text = "• $skill", fontSize = 13.sp, color = AiBurgundy)
                                         }
                                     }
                                 }
                             }
-                            
-                            // Recommendations
+
                             if (result.recommendations.isNotEmpty()) {
                                 Text(
-                                    text = "💡 Recommendations:",
+                                    text = "Recommendations:",
                                     fontSize = 14.sp,
                                     fontWeight = FontWeight.Medium,
-                                    color = Color(0xFF202124)
+                                    color = AiTextPrimary
                                 )
                                 result.recommendations.forEach { rec ->
-                                    Text(
-                                        text = "• $rec",
-                                        fontSize = 13.sp,
-                                        color = Color(0xFF5F6368)
-                                    )
+                                    Text(text = "• $rec", fontSize = 13.sp, color = AiTextSecondary)
                                 }
                             }
-                            
-                            // Learning Resources
+
                             if (result.learningResources.isNotEmpty()) {
                                 Card(
-                                    colors = CardDefaults.cardColors(containerColor = Color(0xFFE3F2FD))
+                                    colors = CardDefaults.cardColors(containerColor = AiGoldLight),
+                                    shape = RoundedCornerShape(10.dp)
                                 ) {
                                     Column(modifier = Modifier.padding(12.dp)) {
                                         Text(
-                                            text = "📚 Learning Resources:",
+                                            text = "Learning Resources:",
                                             fontSize = 14.sp,
                                             fontWeight = FontWeight.Medium,
-                                            color = Color(0xFF1565C0)
+                                            color = AiNavyDeep
                                         )
+                                        Spacer(modifier = Modifier.height(4.dp))
                                         result.learningResources.forEach { resource ->
-                                            Text(
-                                                text = "• $resource",
-                                                fontSize = 13.sp,
-                                                color = Color(0xFF1565C0)
-                                            )
+                                            Text(text = "• $resource", fontSize = 13.sp, color = AiTextSecondary)
                                         }
                                     }
                                 }
@@ -522,38 +492,23 @@ fun AIResumeAnalysisScreen(navController: NavController, mainViewModel: MainView
                     }
                 }
             }
+
+            Spacer(modifier = Modifier.height(24.dp))
         }
     }
 }
 
-// Using existing getFileName from opportunities.kt
-
-// 📄 Helper function to upload file and extract text
-suspend fun uploadAndExtractText(
+private fun extractTextFromUri(
     context: android.content.Context,
-    mainViewModel: MainViewModel,
     uri: Uri,
     fileName: String
 ): String? {
     return try {
-        // Copy file to temp location
-        val inputStream = context.contentResolver.openInputStream(uri)
-        val tempFile = File(context.cacheDir, fileName)
-        FileOutputStream(tempFile).use { output ->
-            inputStream?.copyTo(output)
-        }
-        inputStream?.close()
-        
-        // Upload file and extract text
-        val response = mainViewModel.extractTextFromFile(tempFile)
-        
-        // Clean up temp file
-        tempFile.delete()
-        
-        response
+        val inputStream = context.contentResolver.openInputStream(uri) ?: return null
+        val text = inputStream.bufferedReader(Charsets.UTF_8).use { it.readText() }
+        inputStream.close()
+        if (text.isBlank()) null else text
     } catch (e: Exception) {
-        println("❌ Error uploading file: ${e.message}")
-        e.printStackTrace()
         null
     }
 }

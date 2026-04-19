@@ -3,6 +3,7 @@ package com.example.skill2career
 import android.app.Application as AndroidApp
 import android.content.Context
 import android.content.Intent
+import android.content.SharedPreferences
 import android.net.Uri
 import androidx.core.content.FileProvider
 import androidx.compose.runtime.mutableIntStateOf
@@ -33,6 +34,15 @@ class MainViewModel(application: AndroidApp) : AndroidViewModel(application) {
     private val db = AppDatabase.getDatabase(application)
     private val api = RetrofitClient.instance
     private val gson = Gson()
+    
+    private val sharedPrefs: SharedPreferences = application.getSharedPreferences("Skill2CareerPrefs", Context.MODE_PRIVATE)
+    private val PREF_USER_EMAIL = "user_email"
+    private val PREF_USER_NAME = "user_name"
+    private val PREF_USER_ROLE = "user_role"
+    private val PREF_USER_BRANCH = "user_branch"
+    private val PREF_USER_PHONE = "user_phone"
+    private val PREF_AUTH_TOKEN = "auth_token"
+    private val PREF_IS_LOGGED_IN = "is_logged_in"
 
     var currentUser = mutableStateOf<User?>(null)
     val opportunities = mutableStateListOf<Opportunity>()
@@ -49,6 +59,7 @@ class MainViewModel(application: AndroidApp) : AndroidViewModel(application) {
                 db.userDao().deleteUser(adminUser)
             }
         }
+        loadSavedLoginState()
         refreshData()
     }
 
@@ -134,6 +145,8 @@ class MainViewModel(application: AndroidApp) : AndroidViewModel(application) {
                     RetrofitClient.setAuthToken(auth.token)
                     val user = auth.user
                     currentUser.value = user
+                    // Save login state to SharedPreferences
+                    saveLoginState(user, auth.token)
                     // Server returned the actual role - navigation should use user.role
                     fetchUserApplications(email)
                     refreshData()
@@ -201,6 +214,8 @@ class MainViewModel(application: AndroidApp) : AndroidViewModel(application) {
                     RetrofitClient.setAuthToken(auth.token)
                     val user = auth.user
                     currentUser.value = user
+                    // Save login state to SharedPreferences
+                    saveLoginState(user, auth.token)
                     fetchUserApplications(email)
                     refreshData()
                     onResult(true, null)
@@ -280,6 +295,8 @@ class MainViewModel(application: AndroidApp) : AndroidViewModel(application) {
     fun logout() {
         currentUser.value = null
         myApplications.clear()
+        // Clear saved login state
+        clearLoginState()
     }
 
     fun postOpportunity(opportunity: Opportunity) {
@@ -733,6 +750,59 @@ class MainViewModel(application: AndroidApp) : AndroidViewModel(application) {
             } catch (e: Exception) {
                 onResult(false, e.message)
             }
+        }
+    }
+    
+    // Save login state to SharedPreferences
+    private fun saveLoginState(user: User, token: String) {
+        sharedPrefs.edit().apply {
+            putString(PREF_USER_EMAIL, user.email)
+            putString(PREF_USER_NAME, user.name)
+            putString(PREF_USER_ROLE, user.role)
+            putString(PREF_USER_BRANCH, user.branch)
+            putString(PREF_USER_PHONE, user.phoneNumber)
+            putString(PREF_AUTH_TOKEN, token)
+            putBoolean(PREF_IS_LOGGED_IN, true)
+            apply()
+        }
+    }
+    
+    // Load saved login state from SharedPreferences
+    private fun loadSavedLoginState() {
+        val isLoggedIn = sharedPrefs.getBoolean(PREF_IS_LOGGED_IN, false)
+        if (isLoggedIn) {
+            val email = sharedPrefs.getString(PREF_USER_EMAIL, "")
+            val name = sharedPrefs.getString(PREF_USER_NAME, "")
+            val role = sharedPrefs.getString(PREF_USER_ROLE, "")
+            val branch = sharedPrefs.getString(PREF_USER_BRANCH, "")
+            val phone = sharedPrefs.getString(PREF_USER_PHONE, "")
+            val token = sharedPrefs.getString(PREF_AUTH_TOKEN, "")
+            
+            if (email != null && name != null && role != null && token != null) {
+                currentUser.value = User(
+                    email = email,
+                    name = name,
+                    role = role,
+                    branch = branch ?: "",
+                    phoneNumber = phone ?: ""
+                )
+                RetrofitClient.setAuthToken(token)
+                fetchUserApplications(email)
+            }
+        }
+    }
+    
+    // Clear saved login state from SharedPreferences
+    private fun clearLoginState() {
+        sharedPrefs.edit().apply {
+            remove(PREF_USER_EMAIL)
+            remove(PREF_USER_NAME)
+            remove(PREF_USER_ROLE)
+            remove(PREF_USER_BRANCH)
+            remove(PREF_USER_PHONE)
+            remove(PREF_AUTH_TOKEN)
+            remove(PREF_IS_LOGGED_IN)
+            apply()
         }
     }
     

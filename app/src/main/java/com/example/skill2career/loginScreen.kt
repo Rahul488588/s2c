@@ -183,15 +183,17 @@ fun LoginScreen(
                             isError = emailError || errorMessage != null,
                             leadingIcon = { Icon(imageVector = Icons.Outlined.Email, contentDescription = null, tint = if (emailError) Burgundy else TextMuted) },
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email, autoCorrectEnabled = false),
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier.fillMaxWidth().background(Color.White),
                             shape = RoundedCornerShape(12.dp),
                             singleLine = true,
                             colors = OutlinedTextFieldDefaults.colors(
                                 focusedBorderColor = NavyDeep, unfocusedBorderColor = DividerLight,
                                 focusedLabelColor = NavyDeep, unfocusedLabelColor = TextMuted,
-                                focusedTextColor = TextPrimary, unfocusedTextColor = TextPrimary,
-                                focusedLeadingIconColor = NavyDeep, unfocusedLeadingIconColor = TextMuted
-                            )
+                                focusedTextColor = Color.Black, unfocusedTextColor = Color.Black,
+                                focusedLeadingIconColor = NavyDeep, unfocusedLeadingIconColor = TextMuted,
+                                cursorColor = Color.Black
+                            ),
+                            textStyle = androidx.compose.ui.text.TextStyle(color = Color.Black)
                         )
                         if (emailError) {
                             Text(text = "Please enter a valid email address", color = Burgundy, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(start = 16.dp, top = 4.dp))
@@ -212,16 +214,18 @@ fun LoginScreen(
                             },
                             visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier.fillMaxWidth().background(Color.White),
                             shape = RoundedCornerShape(12.dp),
                             singleLine = true,
                             colors = OutlinedTextFieldDefaults.colors(
                                 focusedBorderColor = NavyDeep, unfocusedBorderColor = DividerLight,
                                 focusedLabelColor = NavyDeep, unfocusedLabelColor = TextMuted,
-                                focusedTextColor = TextPrimary, unfocusedTextColor = TextPrimary,
+                                focusedTextColor = Color.Black, unfocusedTextColor = Color.Black,
                                 focusedLeadingIconColor = NavyDeep, unfocusedLeadingIconColor = TextMuted,
-                                focusedTrailingIconColor = TextMuted, unfocusedTrailingIconColor = TextMuted
-                            )
+                                focusedTrailingIconColor = TextMuted, unfocusedTrailingIconColor = TextMuted,
+                                cursorColor = Color.Black
+                            ),
+                            textStyle = androidx.compose.ui.text.TextStyle(color = Color.Black)
                         )
 
                         Spacer(modifier = Modifier.height(8.dp))

@@ -100,29 +100,6 @@ private val SidebarTextInactive = Color(0xFFB0BDD0)
 fun AdminScreen(navController: NavController, mainViewModel: MainViewModel) {
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val scope = rememberCoroutineScope()
-    var selectedTab by remember { mutableIntStateOf(0) }
-
-    val isSuperAdmin = mainViewModel.isSuperAdmin()
-    val tabs = if (isSuperAdmin) {
-        listOf("Overview", "Applications", "Manage", "AI Discover", "Super Admin")
-    } else {
-        listOf("Overview", "Applications", "Manage", "AI Discover")
-    }
-
-    var showAddOpportunity by remember { mutableStateOf(false) }
-
-    LaunchedEffect(selectedTab) {
-        if (isSuperAdmin && selectedTab == 4) {
-            mainViewModel.fetchSuperAdminNotifications()
-            mainViewModel.fetchPendingAdminRequests()
-        }
-        if (selectedTab == 3) {
-            mainViewModel.fetchPendingAIOpportunities()
-        }
-        if (selectedTab == 2) {
-            mainViewModel.refreshOpportunities()
-        }
-    }
 
     BackHandler {
         if (drawerState.isOpen) {
@@ -138,7 +115,6 @@ fun AdminScreen(navController: NavController, mainViewModel: MainViewModel) {
             AdminSidebar(
                 navController = navController,
                 drawerState = drawerState,
-                onTabSelect = { selectedTab = it },
                 mainViewModel = mainViewModel
             )
         }
@@ -177,59 +153,9 @@ fun AdminScreen(navController: NavController, mainViewModel: MainViewModel) {
                     )
                 )
             },
-            floatingActionButton = {
-                if (selectedTab == 2) {
-                    ExtendedFloatingActionButton(
-                        onClick = { showAddOpportunity = true },
-                        icon = { Icon(Icons.Default.Add, contentDescription = null) },
-                        text = { Text("Post Opportunity") },
-                        containerColor = Gold,
-                        contentColor = NavyDeep
-                    )
-                }
-            },
             containerColor = Ivory
         ) { paddingValues ->
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues)
-            ) {
-                TabRow(
-                    selectedTabIndex = selectedTab,
-                    containerColor = NavyDeep,
-                    contentColor = Gold,
-                    divider = { HorizontalDivider(color = NavyMid) }
-                ) {
-                    tabs.forEachIndexed { index, title ->
-                        Tab(
-                            selected = selectedTab == index,
-                            onClick = { selectedTab = index },
-                            text = {
-                                Text(
-                                    title,
-                                    fontWeight = if (selectedTab == index) FontWeight.SemiBold else FontWeight.Normal,
-                                    color = if (selectedTab == index) Gold else SidebarIconInactive
-                                )
-                            },
-                            selectedContentColor = Gold,
-                            unselectedContentColor = SidebarIconInactive
-                        )
-                    }
-                }
-
-                when (selectedTab) {
-                    0 -> AdminOverview(onPostClick = { showAddOpportunity = true }, mainViewModel = mainViewModel)
-                    1 -> AdminApplicationsList(mainViewModel = mainViewModel)
-                    2 -> AdminManageContent(mainViewModel = mainViewModel)
-                    3 -> AIDiscoverPanel(mainViewModel = mainViewModel)
-                    4 -> if (isSuperAdmin) SuperAdminPanel(mainViewModel = mainViewModel) else AdminOverview(onPostClick = { showAddOpportunity = true }, mainViewModel = mainViewModel)
-                }
-            }
-        }
-
-        if (showAddOpportunity) {
-            AddOpportunityDialog(onDismiss = { showAddOpportunity = false }, mainViewModel = mainViewModel)
+            AdminOverview(onPostClick = { navController.navigate("adminManage") }, mainViewModel = mainViewModel, paddingValues = paddingValues)
         }
     }
 }
@@ -238,10 +164,11 @@ fun AdminScreen(navController: NavController, mainViewModel: MainViewModel) {
 fun AdminSidebar(
     navController: NavController,
     drawerState: DrawerState,
-    onTabSelect: (Int) -> Unit,
     mainViewModel: MainViewModel
 ) {
     val scope = rememberCoroutineScope()
+    val isSuperAdmin = mainViewModel.isSuperAdmin()
+    
     ModalDrawerSheet(
         drawerContainerColor = SidebarBg,
         drawerShape = RoundedCornerShape(topEnd = 16.dp, bottomEnd = 16.dp)
@@ -280,16 +207,29 @@ fun AdminSidebar(
         Spacer(modifier = Modifier.height(12.dp))
 
         val adminItems = listOf(
-            Triple("Dashboard", Icons.Default.Dashboard, 0),
-            Triple("Review Apps", Icons.Default.AssignmentInd, 1),
-            Triple("Manage Content", Icons.Default.ManageAccounts, 2),
-            Triple("AI Discover", Icons.Default.AutoAwesome, 3)
+            Triple("Dashboard", Icons.Default.Dashboard, "admin"),
+            Triple("Review Apps", Icons.Default.AssignmentInd, "adminApplications"),
+            Triple("Manage Content", Icons.Default.ManageAccounts, "adminManage"),
+            Triple("Discover", Icons.Default.AutoAwesome, "adminAI")
         )
 
-        adminItems.forEach { (title, icon, tabIndex) ->
+        adminItems.forEach { (title, icon, route) ->
             AdminDrawerItem(title, icon) {
                 scope.launch {
-                    onTabSelect(tabIndex)
+                    navController.navigate(route) {
+                        popUpTo("admin") { inclusive = false }
+                    }
+                    drawerState.close()
+                }
+            }
+        }
+
+        if (isSuperAdmin) {
+            AdminDrawerItem("Super Admin", Icons.Default.Badge) {
+                scope.launch {
+                    navController.navigate("adminSuper") {
+                        popUpTo("admin") { inclusive = false }
+                    }
                     drawerState.close()
                 }
             }
@@ -310,6 +250,243 @@ fun AdminSidebar(
             }
         }
         Spacer(modifier = Modifier.height(12.dp))
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun AdminApplicationsScreen(navController: NavController, mainViewModel: MainViewModel) {
+    val drawerState = rememberDrawerState(DrawerValue.Closed)
+    val scope = rememberCoroutineScope()
+
+    BackHandler {
+        if (drawerState.isOpen) {
+            scope.launch { drawerState.close() }
+        } else {
+            navController.navigateUp()
+        }
+    }
+
+    ModalNavigationDrawer(
+        drawerState = drawerState,
+        drawerContent = {
+            AdminSidebar(
+                navController = navController,
+                drawerState = drawerState,
+                mainViewModel = mainViewModel
+            )
+        }
+    ) {
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    title = {
+                        Text(
+                            "Review Applications",
+                            fontWeight = FontWeight.SemiBold,
+                            style = MaterialTheme.typography.titleMedium,
+                            color = Color.White
+                        )
+                    },
+                    navigationIcon = {
+                        IconButton(onClick = { scope.launch { drawerState.open() } }) {
+                            Icon(Icons.Default.Menu, contentDescription = "Menu", tint = Gold)
+                        }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = NavyDeep,
+                        titleContentColor = Color.White
+                    )
+                )
+            },
+            containerColor = Ivory
+        ) { paddingValues ->
+            AdminApplicationsList(mainViewModel = mainViewModel, paddingValues = paddingValues)
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun AdminManageScreen(navController: NavController, mainViewModel: MainViewModel) {
+    val drawerState = rememberDrawerState(DrawerValue.Closed)
+    val scope = rememberCoroutineScope()
+    var showAddOpportunity by remember { mutableStateOf(false) }
+
+    BackHandler {
+        if (drawerState.isOpen) {
+            scope.launch { drawerState.close() }
+        } else {
+            navController.navigateUp()
+        }
+    }
+
+    ModalNavigationDrawer(
+        drawerState = drawerState,
+        drawerContent = {
+            AdminSidebar(
+                navController = navController,
+                drawerState = drawerState,
+                mainViewModel = mainViewModel
+            )
+        }
+    ) {
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    title = {
+                        Text(
+                            "Manage Content",
+                            fontWeight = FontWeight.SemiBold,
+                            style = MaterialTheme.typography.titleMedium,
+                            color = Color.White
+                        )
+                    },
+                    navigationIcon = {
+                        IconButton(onClick = { scope.launch { drawerState.open() } }) {
+                            Icon(Icons.Default.Menu, contentDescription = "Menu", tint = Gold)
+                        }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = NavyDeep,
+                        titleContentColor = Color.White
+                    )
+                )
+            },
+            floatingActionButton = {
+                ExtendedFloatingActionButton(
+                    onClick = { showAddOpportunity = true },
+                    icon = { Icon(Icons.Default.Add, contentDescription = null) },
+                    text = { Text("Post Opportunity") },
+                    containerColor = Gold,
+                    contentColor = NavyDeep
+                )
+            },
+            containerColor = Ivory
+        ) { paddingValues ->
+            AdminManageContent(mainViewModel = mainViewModel, paddingValues = paddingValues)
+        }
+
+        if (showAddOpportunity) {
+            AddOpportunityDialog(onDismiss = { showAddOpportunity = false }, mainViewModel = mainViewModel)
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun AdminAIScreen(navController: NavController, mainViewModel: MainViewModel) {
+    val drawerState = rememberDrawerState(DrawerValue.Closed)
+    val scope = rememberCoroutineScope()
+
+    LaunchedEffect(Unit) {
+        mainViewModel.fetchPendingAIOpportunities()
+    }
+
+    BackHandler {
+        if (drawerState.isOpen) {
+            scope.launch { drawerState.close() }
+        } else {
+            navController.navigateUp()
+        }
+    }
+
+    ModalNavigationDrawer(
+        drawerState = drawerState,
+        drawerContent = {
+            AdminSidebar(
+                navController = navController,
+                drawerState = drawerState,
+                mainViewModel = mainViewModel
+            )
+        }
+    ) {
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    title = {
+                        Text(
+                            "Discover",
+                            fontWeight = FontWeight.SemiBold,
+                            style = MaterialTheme.typography.titleMedium,
+                            color = Color.White
+                        )
+                    },
+                    navigationIcon = {
+                        IconButton(onClick = { scope.launch { drawerState.open() } }) {
+                            Icon(Icons.Default.Menu, contentDescription = "Menu", tint = Gold)
+                        }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = NavyDeep,
+                        titleContentColor = Color.White
+                    )
+                )
+            },
+            containerColor = Ivory
+        ) { paddingValues ->
+            AIDiscoverPanel(mainViewModel = mainViewModel, paddingValues = paddingValues)
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun AdminSuperScreen(navController: NavController, mainViewModel: MainViewModel) {
+    val drawerState = rememberDrawerState(DrawerValue.Closed)
+    val scope = rememberCoroutineScope()
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    LaunchedEffect(Unit) {
+        mainViewModel.fetchSuperAdminNotifications()
+        mainViewModel.fetchPendingAdminRequests()
+    }
+
+    BackHandler {
+        if (drawerState.isOpen) {
+            scope.launch { drawerState.close() }
+        } else {
+            navController.navigateUp()
+        }
+    }
+
+    ModalNavigationDrawer(
+        drawerState = drawerState,
+        drawerContent = {
+            AdminSidebar(
+                navController = navController,
+                drawerState = drawerState,
+                mainViewModel = mainViewModel
+            )
+        }
+    ) {
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    title = {
+                        Text(
+                            "Super Admin",
+                            fontWeight = FontWeight.SemiBold,
+                            style = MaterialTheme.typography.titleMedium,
+                            color = Color.White
+                        )
+                    },
+                    navigationIcon = {
+                        IconButton(onClick = { scope.launch { drawerState.open() } }) {
+                            Icon(Icons.Default.Menu, contentDescription = "Menu", tint = Gold)
+                        }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = NavyDeep,
+                        titleContentColor = Color.White
+                    )
+                )
+            },
+            snackbarHost = { SnackbarHost(snackbarHostState) },
+            containerColor = Ivory
+        ) { paddingValues ->
+            SuperAdminPanel(mainViewModel = mainViewModel, paddingValues = paddingValues)
+        }
     }
 }
 
@@ -349,9 +526,9 @@ fun AdminDrawerItem(
 }
 
 @Composable
-fun AdminOverview(onPostClick: () -> Unit, mainViewModel: MainViewModel) {
+fun AdminOverview(onPostClick: () -> Unit, mainViewModel: MainViewModel, paddingValues: PaddingValues = PaddingValues(0.dp)) {
     LazyColumn(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier.fillMaxSize().padding(paddingValues),
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(20.dp)
     ) {
@@ -400,7 +577,7 @@ fun AdminOverview(onPostClick: () -> Unit, mainViewModel: MainViewModel) {
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     mainViewModel.allStudents.take(5).forEach { student ->
-                        StudentListItem(student, mainViewModel)
+                        AdminStudentRow(student, mainViewModel)
                         if (student != mainViewModel.allStudents.lastOrNull()) {
                             HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp), color = DividerLight)
                         }
@@ -455,14 +632,14 @@ fun StudentListItem(student: User, mainViewModel: MainViewModel) {
 }
 
 @Composable
-fun AdminApplicationsList(mainViewModel: MainViewModel) {
+fun AdminApplicationsList(mainViewModel: MainViewModel, paddingValues: PaddingValues = PaddingValues(0.dp)) {
     if (mainViewModel.allApplications.isEmpty()) {
-        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Text("No applications to review", color = TextMuted)
+        Box(modifier = Modifier.fillMaxSize().padding(paddingValues), contentAlignment = Alignment.Center) {
+            Text("No applications to review", color = TextPrimary)
         }
     } else {
         LazyColumn(
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier.fillMaxSize().padding(paddingValues),
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
@@ -569,9 +746,9 @@ fun AttachmentChip(label: String, fileName: String, mainViewModel: MainViewModel
 }
 
 @Composable
-fun AdminManageContent(mainViewModel: MainViewModel) {
+fun AdminManageContent(mainViewModel: MainViewModel, paddingValues: PaddingValues = PaddingValues(0.dp)) {
     LazyColumn(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier.fillMaxSize().padding(paddingValues),
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
@@ -590,50 +767,48 @@ fun AdminManageContent(mainViewModel: MainViewModel) {
                 colors = CardDefaults.cardColors(containerColor = CardSurface),
                 elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
             ) {
-                ListItem(
-                    headlineContent = { Text(opp.title, fontWeight = FontWeight.Medium, color = TextPrimary) },
-                    supportingContent = {
-                        Column {
-                            Text(opp.company, style = MaterialTheme.typography.bodySmall, color = TextSecondary)
-                            Text(
-                                opp.safeType.name,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = TextMuted
-                            )
-                        }
-                    },
-                    leadingContent = {
-                        Box(
-                            modifier = Modifier
-                                .size(40.dp)
-                                .background(
-                                    when (opp.safeType) {
-                                        OpportunityType.Internship  -> NavyDeep.copy(alpha = 0.10f)
-                                        OpportunityType.Job         -> GoldLight
-                                        OpportunityType.Scholarship -> ForestGreenBg
-                                    },
-                                    RoundedCornerShape(8.dp)
-                                ),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                if (opp.safeType == OpportunityType.Scholarship) Icons.Default.School else Icons.Default.Work,
-                                contentDescription = null,
-                                tint = when (opp.safeType) {
-                                    OpportunityType.Internship  -> NavyDeep
-                                    OpportunityType.Job         -> Gold
-                                    OpportunityType.Scholarship -> ForestGreen
+                Row(
+                    modifier = Modifier.padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(40.dp)
+                            .background(
+                                when (opp.safeType) {
+                                    OpportunityType.Internship  -> NavyDeep.copy(alpha = 0.10f)
+                                    OpportunityType.Job         -> GoldLight
+                                    OpportunityType.Scholarship -> ForestGreenBg
                                 },
-                                modifier = Modifier.size(20.dp)
-                            )
-                        }
-                    },
-                    trailingContent = {
-                        IconButton(onClick = { mainViewModel.deleteOpportunity(opp.id) }) {
-                            Icon(Icons.Default.Delete, contentDescription = null, tint = Burgundy)
-                        }
+                                RoundedCornerShape(8.dp)
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            if (opp.safeType == OpportunityType.Scholarship) Icons.Default.School else Icons.Default.Work,
+                            contentDescription = null,
+                            tint = when (opp.safeType) {
+                                OpportunityType.Internship  -> NavyDeep
+                                OpportunityType.Job         -> Gold
+                                OpportunityType.Scholarship -> ForestGreen
+                            },
+                            modifier = Modifier.size(20.dp)
+                        )
                     }
-                )
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(opp.title, fontWeight = FontWeight.Medium, color = TextPrimary)
+                        Text(opp.company, style = MaterialTheme.typography.bodySmall, color = TextSecondary)
+                        Text(
+                            opp.safeType.name,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = TextMuted
+                        )
+                    }
+                    IconButton(onClick = { mainViewModel.deleteOpportunity(opp.id) }) {
+                        Icon(Icons.Default.Delete, contentDescription = null, tint = Burgundy)
+                    }
+                }
             }
         }
     }
@@ -730,18 +905,27 @@ fun AdminStudentRow(user: User, mainViewModel: MainViewModel) {
     }
 
     Box {
-        ListItem(
-            headlineContent = { Text(user.name, fontWeight = FontWeight.Medium, color = TextPrimary) },
-            supportingContent = { Text(user.email, color = TextSecondary) },
-            leadingContent = {
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(containerColor = CardSurface),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+            shape = RoundedCornerShape(12.dp)
+        ) {
+            Row(
+                modifier = Modifier.padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 Box(
                     modifier = Modifier.size(40.dp).background(NavyDeep.copy(alpha = 0.10f), CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(Icons.Default.Person, contentDescription = null, tint = NavyDeep)
                 }
-            },
-            trailingContent = {
+                Spacer(modifier = Modifier.width(12.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(user.name, fontWeight = FontWeight.Medium, color = TextPrimary)
+                    Text(user.email, color = TextSecondary)
+                }
                 IconButton(
                     onClick = { showDeleteDialog = true },
                     enabled = !isDeleting
@@ -756,9 +940,8 @@ fun AdminStudentRow(user: User, mainViewModel: MainViewModel) {
                         Icon(Icons.Default.Delete, contentDescription = "Delete student", tint = Burgundy.copy(alpha = 0.7f))
                     }
                 }
-            },
-            modifier = Modifier.clip(RoundedCornerShape(12.dp)).background(CardSurface)
-        )
+            }
+        }
 
         SnackbarHost(
             hostState = snackbarHostState,
@@ -769,6 +952,7 @@ fun AdminStudentRow(user: User, mainViewModel: MainViewModel) {
     if (showDeleteDialog) {
         AlertDialog(
             onDismissRequest = { if (!isDeleting) showDeleteDialog = false },
+            containerColor = Ivory,
             title = { Text("Delete Student", color = NavyDeep, fontWeight = FontWeight.Bold) },
             text = {
                 Column {
@@ -868,7 +1052,7 @@ fun AdminActionRow(title: String, icon: ImageVector, color: Color, onClick: () -
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SuperAdminPanel(mainViewModel: MainViewModel) {
+fun SuperAdminPanel(mainViewModel: MainViewModel, paddingValues: PaddingValues = PaddingValues(0.dp)) {
     val notifications = mainViewModel.superAdminNotifications
     val pendingRequests = mainViewModel.pendingAdminRequests
     val unreadCount = mainViewModel.unreadNotificationCount.intValue
@@ -892,159 +1076,153 @@ fun SuperAdminPanel(mainViewModel: MainViewModel) {
         }
     }
 
-    Scaffold(
-        snackbarHost = { SnackbarHost(snackbarHostState) },
-        modifier = Modifier.fillMaxSize(),
-        containerColor = Ivory
-    ) { padding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .padding(16.dp)
-        ) {
-            if (isLoading) {
-                LinearProgressIndicator(
-                    modifier = Modifier.fillMaxWidth(),
-                    color = Gold,
-                    trackColor = NavyDeep.copy(alpha = 0.12f)
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-            }
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(paddingValues)
+            .padding(16.dp)
+    ) {
+        if (isLoading) {
+            LinearProgressIndicator(
+                modifier = Modifier.fillMaxWidth(),
+                color = Gold,
+                trackColor = NavyDeep.copy(alpha = 0.12f)
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+        }
 
+        Card(
+            colors = CardDefaults.cardColors(containerColor = NavyDeep),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Row(
+                modifier = Modifier.padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    Icons.Default.AdminPanelSettings,
+                    contentDescription = null,
+                    tint = Gold,
+                    modifier = Modifier.size(32.dp)
+                )
+                Spacer(modifier = Modifier.width(12.dp))
+                Column {
+                    Text(
+                        "Super Admin Console",
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 18.sp
+                    )
+                    Text(
+                        "Manage admin access and notifications",
+                        color = Color.White.copy(alpha = 0.65f),
+                        fontSize = 12.sp
+                    )
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            SuperAdminStatCard(
+                title = "Pending Requests",
+                count = pendingRequests.size.toString(),
+                icon = Icons.Default.PersonAdd,
+                color = Gold,
+                modifier = Modifier.weight(1f)
+            )
+            SuperAdminStatCard(
+                title = "Unread Notifications",
+                count = unreadCount.toString(),
+                icon = Icons.Default.Notifications,
+                color = Burgundy,
+                modifier = Modifier.weight(1f)
+            )
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Text(
+            "Pending Admin Access Requests",
+            fontWeight = FontWeight.Bold,
+            fontSize = 16.sp,
+            color = NavyDeep,
+            modifier = Modifier.padding(bottom = 8.dp)
+        )
+
+        if (pendingRequests.isEmpty()) {
             Card(
-                colors = CardDefaults.cardColors(containerColor = NavyDeep),
+                colors = CardDefaults.cardColors(containerColor = CardSurface),
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Row(
+                Text(
+                    "No pending admin requests",
                     modifier = Modifier.padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        Icons.Default.AdminPanelSettings,
-                        contentDescription = null,
-                        tint = Gold,
-                        modifier = Modifier.size(32.dp)
-                    )
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Column {
-                        Text(
-                            "Super Admin Console",
-                            color = Color.White,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 18.sp
-                        )
-                        Text(
-                            "Manage admin access and notifications",
-                            color = Color.White.copy(alpha = 0.65f),
-                            fontSize = 12.sp
-                        )
-                    }
-                }
+                    color = TextMuted
+                )
             }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+        } else {
+            LazyColumn(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                SuperAdminStatCard(
-                    title = "Pending Requests",
-                    count = pendingRequests.size.toString(),
-                    icon = Icons.Default.PersonAdd,
-                    color = Gold,
-                    modifier = Modifier.weight(1f)
-                )
-                SuperAdminStatCard(
-                    title = "Unread Notifications",
-                    count = unreadCount.toString(),
-                    icon = Icons.Default.Notifications,
-                    color = Burgundy,
-                    modifier = Modifier.weight(1f)
-                )
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Text(
-                "Pending Admin Access Requests",
-                fontWeight = FontWeight.Bold,
-                fontSize = 16.sp,
-                color = NavyDeep,
-                modifier = Modifier.padding(bottom = 8.dp)
-            )
-
-            if (pendingRequests.isEmpty()) {
-                Card(
-                    colors = CardDefaults.cardColors(containerColor = CardSurface),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text(
-                        "No pending admin requests",
-                        modifier = Modifier.padding(16.dp),
-                        color = TextMuted
+                items(pendingRequests) { request ->
+                    PendingAdminRequestCard(
+                        request = request,
+                        onApprove = {
+                            selectedRequest = request
+                            tempPassword = ""
+                            passwordVisible = false
+                            showApproveDialog = true
+                        },
+                        onReject = {
+                            selectedRequest = request
+                            showRejectDialog = true
+                        }
                     )
                 }
-            } else {
-                LazyColumn(
-                    modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    items(pendingRequests) { request ->
-                        PendingAdminRequestCard(
-                            request = request,
-                            onApprove = {
-                                selectedRequest = request
-                                tempPassword = ""
-                                passwordVisible = false
-                                showApproveDialog = true
-                            },
-                            onReject = {
-                                selectedRequest = request
-                                showRejectDialog = true
-                            }
-                        )
-                    }
-                }
             }
+        }
 
-            Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(16.dp))
 
-            Text(
-                "Recent Notifications",
-                fontWeight = FontWeight.Bold,
-                fontSize = 16.sp,
-                color = NavyDeep,
-                modifier = Modifier.padding(bottom = 8.dp)
-            )
+        Text(
+            "Recent Notifications",
+            fontWeight = FontWeight.Bold,
+            fontSize = 16.sp,
+            color = NavyDeep,
+            modifier = Modifier.padding(bottom = 8.dp)
+        )
 
-            if (notifications.isEmpty()) {
-                Card(
-                    colors = CardDefaults.cardColors(containerColor = CardSurface),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text(
-                        "No notifications",
-                        modifier = Modifier.padding(16.dp),
-                        color = TextMuted
-                    )
-                }
-            } else {
-                LazyColumn(
-                    modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    items(notifications.take(10)) { notification ->
-                        NotificationCard(
-                            notification = notification,
-                            onClick = {
-                                if (!notification.isRead) {
-                                    mainViewModel.markNotificationRead(notification.id)
-                                }
+        if (notifications.isEmpty()) {
+            Card(
+                colors = CardDefaults.cardColors(containerColor = CardSurface),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(
+                    "No notifications",
+                    modifier = Modifier.padding(16.dp),
+                    color = TextMuted
+                )
+            }
+        } else {
+            LazyColumn(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                items(notifications.take(10)) { notification ->
+                    NotificationCard(
+                        notification = notification,
+                        onClick = {
+                            if (!notification.isRead) {
+                                mainViewModel.markNotificationRead(notification.id)
                             }
-                        )
-                    }
+                        }
+                    )
                 }
             }
         }
@@ -1303,7 +1481,7 @@ fun NotificationCard(notification: com.example.skill2career.network.Notification
 }
 
 @Composable
-fun AIDiscoverPanel(mainViewModel: MainViewModel) {
+fun AIDiscoverPanel(mainViewModel: MainViewModel, paddingValues: PaddingValues = PaddingValues(0.dp)) {
     val opportunities = mainViewModel.aiDiscoveredOpportunities.toList()
     val isFetching = mainViewModel.isFetchingAIOpportunities.value
     var errorMessage by remember { mutableStateOf<String?>(null) }
@@ -1316,6 +1494,7 @@ fun AIDiscoverPanel(mainViewModel: MainViewModel) {
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .padding(paddingValues)
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
@@ -1328,13 +1507,13 @@ fun AIDiscoverPanel(mainViewModel: MainViewModel) {
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Text(
-                    text = "AI Opportunity Discovery",
+                    text = "Opportunity Discovery",
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Bold,
                     color = Gold
                 )
                 Text(
-                    text = "Use AI to discover current internships and scholarships from around the world. Review and approve opportunities before they become visible to students.",
+                    text = "Use the below button to discover current internships and scholarships from around the world.",
                     fontSize = 14.sp,
                     color = Color.White.copy(alpha = 0.75f)
                 )
