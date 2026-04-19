@@ -32,6 +32,18 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
 
+private val NavyDeep      = Color(0xFF1B2A4A)
+private val NavyMid       = Color(0xFF2E3D5E)
+private val Gold          = Color(0xFFC9A84C)
+private val GoldLight     = Color(0xFFF0EAD5)
+private val CardSurface   = Color(0xFFFAF8F4)
+private val TextPrimary   = Color(0xFF1A1A2E)
+private val TextSecondary = Color(0xFF4A4F6A)
+private val TextMuted     = Color(0xFF8B8FA8)
+private val DividerLight  = Color(0xFFD4C5A9)
+private val Burgundy      = Color(0xFF7A2A35)
+private val BurgundyBg    = Color(0xFFF0D5D5)
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LoginScreen(
@@ -39,8 +51,7 @@ fun LoginScreen(
     onLoginClick: () -> Unit,
     onSignUpClick: () -> Unit
 ) {
-    // Separate login systems - user selects which system to use
-    var selectedLoginType by remember { mutableStateOf("Student") } // "Student" or "Admin"
+    var selectedLoginType by remember { mutableStateOf("Student") }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var adminPasswordVisible by remember { mutableStateOf(false) }
@@ -48,7 +59,7 @@ fun LoginScreen(
     var emailError by remember { mutableStateOf(false) }
     var isLoading by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
-    var adminLoginStep by remember { mutableStateOf("email") } // "email" or "password" for admin
+    var adminLoginStep by remember { mutableStateOf("email") }
 
     var startAnimation by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) {
@@ -70,22 +81,9 @@ fun LoginScreen(
         }
     }
 
-    // Clean monochrome theme
-    val primaryColor = Color.Black
-    val backgroundGradient = Brush.verticalGradient(
-        colors = listOf(
-            Color(0xFFF8F9FA),
-            Color(0xFFFFFFFF)
-        )
-    )
-    val cardBackground = Color.White
-    val surfaceVariant = Color(0xFFF1F3F4)
+    val backgroundGradient = Brush.verticalGradient(colors = listOf(NavyDeep, NavyMid))
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(backgroundGradient)
-    ) {
+    Box(modifier = Modifier.fillMaxSize().background(backgroundGradient)) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -93,255 +91,123 @@ fun LoginScreen(
                 .windowInsetsPadding(WindowInsets.statusBars),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Spacer(modifier = Modifier.height(40.dp))
+            Spacer(modifier = Modifier.height(48.dp))
 
-            // Logo and Title Section
             AnimatedVisibility(
                 visible = startAnimation,
                 enter = fadeIn(tween(600)) + slideInVertically(tween(600)) { it / 3 }
             ) {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    // App Logo Circle
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Box(
                         modifier = Modifier
-                            .size(80.dp)
+                            .size(84.dp)
                             .clip(CircleShape)
-                            .background(Color.Black),
+                            .background(Brush.radialGradient(listOf(Gold.copy(alpha = 0.25f), Color.Transparent))),
                         contentAlignment = Alignment.Center
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.School,
-                            contentDescription = null,
-                            tint = Color.White,
-                            modifier = Modifier.size(40.dp)
-                        )
+                        Box(
+                            modifier = Modifier.size(72.dp).clip(CircleShape).background(Gold),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(imageVector = Icons.Default.School, contentDescription = null, tint = NavyDeep, modifier = Modifier.size(38.dp))
+                        }
                     }
-
                     Spacer(modifier = Modifier.height(20.dp))
-
-                    Text(
-                        text = "Welcome Back",
-                        style = MaterialTheme.typography.headlineLarge,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.Black
-                    )
-
-                    Text(
-                        text = "Sign in to continue",
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = Color.Gray,
-                        modifier = Modifier.padding(top = 8.dp)
-                    )
+                    Text(text = "Welcome Back", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold, color = Color.White)
+                    Text(text = "Sign in to continue", style = MaterialTheme.typography.bodyLarge, color = Color.White.copy(alpha = 0.65f), modifier = Modifier.padding(top = 6.dp))
                 }
             }
 
             Spacer(modifier = Modifier.height(32.dp))
 
-            // Login Type Selection - Two separate systems
-            Text(
-                text = "Select Login Type",
-                style = MaterialTheme.typography.bodyMedium,
-                color = Color.Gray,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth()
-            )
+            Text(text = "Select Login Type", style = MaterialTheme.typography.bodyMedium, color = Color.White.copy(alpha = 0.7f), textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Login Type Toggle
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .background(Color.White.copy(alpha = 0.1f), RoundedCornerShape(14.dp))
                     .padding(4.dp),
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
                 listOf("Student" to Icons.Default.Person, "Admin" to Icons.Default.AdminPanelSettings).forEach { (type, icon) ->
                     val selected = selectedLoginType == type
-                    val containerColor by animateColorAsState(
-                        targetValue = if (selected) Color.Black else Color.Transparent,
-                        label = "loginTypeContainer"
-                    )
-                    val contentColor by animateColorAsState(
-                        targetValue = if (selected) Color.White else Color.Gray,
-                        label = "loginTypeContent"
-                    )
-
+                    val containerColor by animateColorAsState(targetValue = if (selected) Gold else Color.Transparent, label = "container")
+                    val contentColor by animateColorAsState(targetValue = if (selected) NavyDeep else Color.White.copy(alpha = 0.65f), label = "content")
                     Surface(
-                        onClick = { 
-                            selectedLoginType = type
-                            // Reset fields when switching
-                            email = ""
-                            password = ""
-                            adminLoginStep = "email"
-                            errorMessage = null
-                        },
-                        shape = RoundedCornerShape(12.dp),
+                        onClick = { selectedLoginType = type; email = ""; password = ""; adminLoginStep = "email"; errorMessage = null },
+                        shape = RoundedCornerShape(10.dp),
                         color = containerColor,
                         modifier = Modifier.weight(1f)
                     ) {
-                        Row(
-                            modifier = Modifier
-                                .height(48.dp)
-                                .fillMaxWidth(),
-                            horizontalArrangement = Arrangement.Center,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                imageVector = icon,
-                                contentDescription = null,
-                                tint = contentColor,
-                                modifier = Modifier.size(20.dp)
-                            )
+                        Row(modifier = Modifier.height(46.dp).fillMaxWidth(), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
+                            Icon(imageVector = icon, contentDescription = null, tint = contentColor, modifier = Modifier.size(20.dp))
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = type,
-                                color = contentColor,
-                                fontWeight = FontWeight.Medium,
-                                fontSize = 14.sp
-                            )
+                            Text(text = type, color = contentColor, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
                         }
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(20.dp))
 
-            // Show different UI based on selected login type
             if (selectedLoginType == "Admin") {
-                // Admin Login Info
-                Card(
-                    colors = CardDefaults.cardColors(
-                        containerColor = Color(0xFFFFF3E0)
-                    ),
-                    shape = RoundedCornerShape(8.dp),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Column(
-                        modifier = Modifier.padding(12.dp)
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Info,
-                                contentDescription = null,
-                                tint = Color(0xFFE65100),
-                                modifier = Modifier.size(20.dp)
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
+                Card(colors = CardDefaults.cardColors(containerColor = GoldLight), shape = RoundedCornerShape(12.dp), modifier = Modifier.fillMaxWidth()) {
+                    Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Icon(imageVector = Icons.Default.Info, contentDescription = null, tint = NavyDeep, modifier = Modifier.size(20.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Column {
+                            Text(text = "Admin Login", color = NavyDeep, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
                             Text(
-                                text = "Admin Login",
-                                color = Color(0xFFE65100),
-                                style = MaterialTheme.typography.bodyMedium,
-                                fontWeight = FontWeight.Medium
+                                text = if (adminLoginStep == "email") "Enter your email to request access. Super admin will approve and set your password." else "Enter your password to login.",
+                                color = TextSecondary, style = MaterialTheme.typography.bodySmall, fontSize = 12.sp
                             )
                         }
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = if (adminLoginStep == "email") 
-                                "Enter your email to request access. Super admin will approve and set your password."
-                            else 
-                                "Enter your password to login.",
-                            color = Color(0xFFE65100),
-                            style = MaterialTheme.typography.bodySmall,
-                            fontSize = 12.sp
-                        )
                     }
                 }
                 Spacer(modifier = Modifier.height(16.dp))
             }
 
-            // Form Card
             AnimatedVisibility(
                 visible = startAnimation,
                 enter = fadeIn(tween(600, delayMillis = 200)) + slideInVertically(tween(600, delayMillis = 200)) { it / 5 }
             ) {
-                Card(
-                    shape = RoundedCornerShape(24.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = cardBackground
-                    ),
-                    elevation = CardDefaults.cardElevation(
-                        defaultElevation = 2.dp
-                    ),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Column(
-                        modifier = Modifier.padding(24.dp)
-                    ) {
-                        // Email Field
+                Card(shape = RoundedCornerShape(24.dp), colors = CardDefaults.cardColors(containerColor = CardSurface), elevation = CardDefaults.cardElevation(defaultElevation = 4.dp), modifier = Modifier.fillMaxWidth()) {
+                    Column(modifier = Modifier.padding(24.dp)) {
                         OutlinedTextField(
                             value = email,
-                            onValueChange = {
-                                email = it
-                                emailError = !isValidEmail(it) && it.isNotEmpty()
-                                errorMessage = null
-                            },
+                            onValueChange = { email = it; emailError = !isValidEmail(it) && it.isNotEmpty(); errorMessage = null },
                             label = { Text("Email address") },
-                            placeholder = { Text("name@company.com") },
+                            placeholder = { Text("name@college.edu") },
                             isError = emailError || errorMessage != null,
-                            leadingIcon = {
-                                Icon(
-                                    imageVector = Icons.Outlined.Email,
-                                    contentDescription = null,
-                                    tint = if (emailError) Color.Red else Color.Gray
-                                )
-                            },
-                            keyboardOptions = KeyboardOptions(
-                                keyboardType = KeyboardType.Email,
-                                autoCorrectEnabled = false
-                            ),
+                            leadingIcon = { Icon(imageVector = Icons.Outlined.Email, contentDescription = null, tint = if (emailError) Burgundy else TextMuted) },
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email, autoCorrectEnabled = false),
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(12.dp),
                             singleLine = true,
                             colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = Color.Black,
-                                unfocusedBorderColor = Color.Gray,
-                                focusedLabelColor = Color.Black,
-                                unfocusedLabelColor = Color.Gray,
-                                focusedTextColor = Color.Black,
-                                unfocusedTextColor = Color.Black,
-                                focusedLeadingIconColor = Color.Black,
-                                unfocusedLeadingIconColor = Color.Gray
+                                focusedBorderColor = NavyDeep, unfocusedBorderColor = DividerLight,
+                                focusedLabelColor = NavyDeep, unfocusedLabelColor = TextMuted,
+                                focusedTextColor = TextPrimary, unfocusedTextColor = TextPrimary,
+                                focusedLeadingIconColor = NavyDeep, unfocusedLeadingIconColor = TextMuted
                             )
                         )
-
                         if (emailError) {
-                            Text(
-                                text = "Please enter a valid email address",
-                                color = Color.Red,
-                                style = MaterialTheme.typography.bodySmall,
-                                modifier = Modifier.padding(start = 16.dp, top = 4.dp)
-                            )
+                            Text(text = "Please enter a valid email address", color = Burgundy, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(start = 16.dp, top = 4.dp))
                         }
 
                         Spacer(modifier = Modifier.height(16.dp))
 
-                        // Password Field
                         OutlinedTextField(
                             value = password,
-                            onValueChange = {
-                                password = it
-                                errorMessage = null
-                            },
+                            onValueChange = { password = it; errorMessage = null },
                             label = { Text("Password") },
                             placeholder = { Text("Enter your password") },
-                            leadingIcon = {
-                                Icon(
-                                    imageVector = Icons.Outlined.Lock,
-                                    contentDescription = null,
-                                    tint = Color.Gray
-                                )
-                            },
+                            leadingIcon = { Icon(imageVector = Icons.Outlined.Lock, contentDescription = null, tint = TextMuted) },
                             trailingIcon = {
                                 IconButton(onClick = { passwordVisible = !passwordVisible }) {
-                                    Icon(
-                                        imageVector = if (passwordVisible) Icons.Outlined.Visibility else Icons.Outlined.VisibilityOff,
-                                        contentDescription = if (passwordVisible) "Hide password" else "Show password",
-                                        tint = Color.Gray
-                                    )
+                                    Icon(imageVector = if (passwordVisible) Icons.Outlined.Visibility else Icons.Outlined.VisibilityOff, contentDescription = null, tint = TextMuted)
                                 }
                             },
                             visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
@@ -350,71 +216,35 @@ fun LoginScreen(
                             shape = RoundedCornerShape(12.dp),
                             singleLine = true,
                             colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = Color.Black,
-                                unfocusedBorderColor = Color.Gray,
-                                focusedLabelColor = Color.Black,
-                                unfocusedLabelColor = Color.Gray,
-                                focusedTextColor = Color.Black,
-                                unfocusedTextColor = Color.Black,
-                                focusedLeadingIconColor = Color.Black,
-                                unfocusedLeadingIconColor = Color.Gray,
-                                focusedTrailingIconColor = Color.Gray,
-                                unfocusedTrailingIconColor = Color.Gray
+                                focusedBorderColor = NavyDeep, unfocusedBorderColor = DividerLight,
+                                focusedLabelColor = NavyDeep, unfocusedLabelColor = TextMuted,
+                                focusedTextColor = TextPrimary, unfocusedTextColor = TextPrimary,
+                                focusedLeadingIconColor = NavyDeep, unfocusedLeadingIconColor = TextMuted,
+                                focusedTrailingIconColor = TextMuted, unfocusedTrailingIconColor = TextMuted
                             )
                         )
 
                         Spacer(modifier = Modifier.height(8.dp))
 
-                        // Forgot Password
-                        Box(
-                            modifier = Modifier.fillMaxWidth(),
-                            contentAlignment = Alignment.CenterEnd
-                        ) {
-                            TextButton(onClick = { /* TODO: Forgot password */ }) {
-                                Text(
-                                    "Forgot Password?",
-                                    color = Color.Gray,
-                                    fontSize = 13.sp
-                                )
+                        Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.CenterEnd) {
+                            TextButton(onClick = { }) {
+                                Text("Forgot Password?", color = TextSecondary, fontSize = 13.sp)
                             }
                         }
 
-                        // Error Message
                         errorMessage?.let {
-                            Card(
-                                colors = CardDefaults.cardColors(
-                                    containerColor = Color(0xFFFFEBEE)
-                                ),
-                                shape = RoundedCornerShape(8.dp),
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Row(
-                                    modifier = Modifier.padding(12.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.Error,
-                                        contentDescription = null,
-                                        tint = Color.Red,
-                                        modifier = Modifier.size(20.dp)
-                                    )
+                            Card(colors = CardDefaults.cardColors(containerColor = BurgundyBg), shape = RoundedCornerShape(8.dp), modifier = Modifier.fillMaxWidth()) {
+                                Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(imageVector = Icons.Default.Error, contentDescription = null, tint = Burgundy, modifier = Modifier.size(20.dp))
                                     Spacer(modifier = Modifier.width(8.dp))
-                                    Text(
-                                        text = it,
-                                        color = Color.Red,
-                                        style = MaterialTheme.typography.bodySmall
-                                    )
+                                    Text(text = it, color = Burgundy, style = MaterialTheme.typography.bodySmall)
                                 }
                             }
                             Spacer(modifier = Modifier.height(16.dp))
                         }
 
-                        // Login Button
                         var buttonPressed by remember { mutableStateOf(false) }
-                        val buttonScale by animateFloatAsState(
-                            targetValue = if (buttonPressed) 0.97f else 1f,
-                            label = "buttonScale"
-                        )
+                        val buttonScale by animateFloatAsState(targetValue = if (buttonPressed) 0.97f else 1f, label = "buttonScale")
 
                         Button(
                             onClick = {
@@ -426,129 +256,63 @@ fun LoginScreen(
                                 } else {
                                     isLoading = true
                                     errorMessage = null
-                                    
                                     if (selectedLoginType == "Student") {
-                                        // Student Login - email + password
                                         mainViewModel.login(email, password) { success, error ->
                                             isLoading = false
-                                            if (success) {
-                                                onLoginClick()
-                                            } else {
-                                                errorMessage = error ?: "Invalid credentials"
-                                            }
+                                            if (success) onLoginClick() else errorMessage = error ?: "Invalid credentials"
                                         }
                                     } else {
-                                        // Admin Login - two step process
                                         if (adminLoginStep == "email") {
-                                            // Step 1: Submit email only
                                             mainViewModel.adminEmailLogin(email) { result ->
                                                 isLoading = false
                                                 when (result.status) {
-                                                    "requires_password" -> {
-                                                        // Admin exists with password - show password field
-                                                        adminLoginStep = "password"
-                                                        errorMessage = null
-                                                    }
-                                                    "pending_approval" -> {
-                                                        errorMessage = "Your admin access request is pending approval. Please wait for super admin to approve."
-                                                    }
-                                                    "rejected" -> {
-                                                        errorMessage = "Your previous request was rejected. Contact super admin."
-                                                    }
-                                                    "request_created" -> {
-                                                        errorMessage = "Request submitted! Super admin will review and set your password. Check back later."
-                                                    }
-                                                    else -> {
-                                                        errorMessage = result.message ?: "Unknown error"
-                                                    }
+                                                    "requires_password" -> { adminLoginStep = "password"; errorMessage = null }
+                                                    "pending_approval" -> errorMessage = "Your admin access request is pending approval."
+                                                    "rejected" -> errorMessage = "Your request was rejected. Contact super admin."
+                                                    "request_created" -> errorMessage = "Request submitted! Super admin will review. Check back later."
+                                                    else -> errorMessage = result.message ?: "Unknown error"
                                                 }
                                             }
                                         } else {
-                                            // Step 2: Submit password
                                             mainViewModel.adminPasswordLogin(email, password) { success, error ->
                                                 isLoading = false
-                                                if (success) {
-                                                    onLoginClick()
-                                                } else {
-                                                    errorMessage = error ?: "Invalid password"
-                                                }
+                                                if (success) onLoginClick() else errorMessage = error ?: "Invalid password"
                                             }
                                         }
                                     }
                                 }
                             },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(52.dp)
-                                .scale(buttonScale),
+                            modifier = Modifier.fillMaxWidth().height(52.dp).scale(buttonScale),
                             shape = RoundedCornerShape(12.dp),
                             enabled = !isLoading,
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = Color.Black,
-                                disabledContainerColor = Color.LightGray
-                            )
+                            colors = ButtonDefaults.buttonColors(containerColor = NavyDeep, disabledContainerColor = DividerLight)
                         ) {
                             if (isLoading) {
-                                CircularProgressIndicator(
-                                    color = Color.White,
-                                    modifier = Modifier.size(22.dp),
-                                    strokeWidth = 2.dp
-                                )
+                                CircularProgressIndicator(color = Color.White, modifier = Modifier.size(22.dp), strokeWidth = 2.dp)
                             } else {
                                 val buttonText = when {
                                     selectedLoginType == "Student" -> "Sign In as Student"
                                     adminLoginStep == "email" -> "Submit Email for Access"
                                     else -> "Sign In as Admin"
                                 }
-                                Text(
-                                    text = buttonText,
-                                    fontSize = 16.sp,
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = Color.White
-                                )
+                                Text(text = buttonText, fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
                             }
                         }
 
                         Spacer(modifier = Modifier.height(20.dp))
 
-                        // Divider
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            HorizontalDivider(
-                                modifier = Modifier.weight(1f),
-                                color = Color.LightGray.copy(alpha = 0.5f)
-                            )
-                            Text(
-                                text = "  OR  ",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = Color.Gray
-                            )
-                            HorizontalDivider(
-                                modifier = Modifier.weight(1f),
-                                color = Color.LightGray.copy(alpha = 0.5f)
-                            )
+                        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                            HorizontalDivider(modifier = Modifier.weight(1f), color = DividerLight)
+                            Text(text = "  OR  ", style = MaterialTheme.typography.bodySmall, color = TextMuted)
+                            HorizontalDivider(modifier = Modifier.weight(1f), color = DividerLight)
                         }
 
                         Spacer(modifier = Modifier.height(20.dp))
 
-                        // Sign Up Link
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.Center,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = "Don't have an account? ",
-                                color = Color.Gray
-                            )
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
+                            Text(text = "Don't have an account? ", color = TextSecondary)
                             TextButton(onClick = onSignUpClick) {
-                                Text(
-                                    text = "Sign Up",
-                                    color = Color.Black,
-                                    fontWeight = FontWeight.SemiBold
-                                )
+                                Text(text = "Sign Up", color = Gold, fontWeight = FontWeight.SemiBold)
                             }
                         }
                     }

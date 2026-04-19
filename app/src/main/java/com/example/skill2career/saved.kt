@@ -16,7 +16,10 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import kotlinx.coroutines.launch
 
-// Removed static global list as it's now managed by MainViewModel
+private val NavyDeep    = Color(0xFF1B2A4A)
+private val Ivory       = Color(0xFFF5F0E8)
+private val TextPrimary = Color(0xFF1A1A2E)
+private val TextMuted   = Color(0xFF8B8FA8)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -28,62 +31,36 @@ fun SavedScreen(navController: NavController, mainViewModel: MainViewModel) {
     var selectedOpportunity by remember { mutableStateOf<Opportunity?>(null) }
     val savedOpportunitiesList = mainViewModel.savedOpportunities
 
-    ModalNavigationDrawer(
-        drawerState = drawerState,
-        drawerContent = {
-            Sidebar(navController, drawerState, mainViewModel)
-        }
-    ) {
+    ModalNavigationDrawer(drawerState = drawerState, drawerContent = { Sidebar(navController, drawerState, mainViewModel) }) {
         Scaffold(
             topBar = {
                 TopAppBar(
-                    title = { Text("Saved") },
+                    title = { Text("Saved", color = Color.White, fontWeight = FontWeight.Bold) },
                     navigationIcon = {
                         IconButton(onClick = { scope.launch { drawerState.open() } }) {
-                            Icon(Icons.Default.Menu, contentDescription = "Menu")
+                            Icon(Icons.Default.Menu, contentDescription = "Menu", tint = Color.White)
                         }
-                    }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(containerColor = NavyDeep)
                 )
-            }
+            },
+            containerColor = Ivory
         ) { paddingValues ->
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues)
-                    .padding(horizontal = 16.dp)
-            ) {
+            Column(modifier = Modifier.fillMaxSize().padding(paddingValues).padding(horizontal = 16.dp)) {
                 Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = "Saved Items",
-                    style = MaterialTheme.typography.headlineMedium,
-                    fontWeight = FontWeight.Bold
-                )
-
+                Text(text = "Saved Items", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold, color = TextPrimary)
                 Spacer(modifier = Modifier.height(16.dp))
 
                 if (savedOpportunitiesList.isEmpty()) {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Text("No saved opportunities yet", color = Color.Gray)
+                        Text("No saved opportunities yet", color = TextMuted)
                     }
                 } else {
-                    LazyVerticalGrid(
-                        columns = GridCells.Fixed(1),
-                        contentPadding = PaddingValues(bottom = 16.dp),
-                        verticalArrangement = Arrangement.spacedBy(16.dp),
-                        modifier = Modifier.fillMaxSize()
-                    ) {
+                    LazyVerticalGrid(columns = GridCells.Fixed(1), contentPadding = PaddingValues(bottom = 16.dp), verticalArrangement = Arrangement.spacedBy(16.dp), modifier = Modifier.fillMaxSize()) {
                         items(savedOpportunitiesList, key = { it.id }) { opp ->
-                            OpportunityCard(
-                                opportunity = opp,
-                                mainViewModel = mainViewModel,
-                                onApplyClick = {
-                                    selectedOpportunity = opp
-                                    showApplyDialog = true
-                                },
-                                onViewDetails = {
-                                    selectedOpportunity = opp
-                                    showDetailDialog = true
-                                }
+                            OpportunityCard(opportunity = opp, mainViewModel = mainViewModel,
+                                onApplyClick = { selectedOpportunity = opp; showApplyDialog = true },
+                                onViewDetails = { selectedOpportunity = opp; showDetailDialog = true }
                             )
                         }
                     }
@@ -92,27 +69,13 @@ fun SavedScreen(navController: NavController, mainViewModel: MainViewModel) {
         }
 
         if (showApplyDialog && selectedOpportunity != null) {
-            ApplyFormDialog(
-                opportunity = selectedOpportunity!!,
-                mainViewModel = mainViewModel,
-                onDismiss = { showApplyDialog = false },
-                onApplySubmit = { application, uris ->
-                    mainViewModel.applyForOpportunity(application, uris)
-                    showApplyDialog = false
-                }
-            )
+            ApplyFormDialog(opportunity = selectedOpportunity!!, mainViewModel = mainViewModel, onDismiss = { showApplyDialog = false },
+                onApplySubmit = { application, uris -> mainViewModel.applyForOpportunity(application, uris); showApplyDialog = false })
         }
-        
+
         if (showDetailDialog && selectedOpportunity != null) {
-            OpportunityDetailDialog(
-                opportunity = selectedOpportunity!!,
-                mainViewModel = mainViewModel,
-                onDismiss = { showDetailDialog = false },
-                onApply = {
-                    showDetailDialog = false
-                    showApplyDialog = true
-                }
-            )
+            OpportunityDetailDialog(opportunity = selectedOpportunity!!, mainViewModel = mainViewModel, onDismiss = { showDetailDialog = false },
+                onApply = { showDetailDialog = false; showApplyDialog = true })
         }
     }
 }
