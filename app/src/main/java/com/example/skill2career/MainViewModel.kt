@@ -228,6 +228,40 @@ class MainViewModel(application: AndroidApp) : AndroidViewModel(application) {
         }
     }
 
+    fun forgotPassword(email: String, onResult: (Boolean, String?, String?) -> Unit) {
+        viewModelScope.launch {
+            try {
+                val response = api.forgotPassword(mapOf("email" to email))
+                if (response.isSuccessful && response.body() != null) {
+                    val body = response.body()!!
+                    val otp = body["otp"] as? String
+                    val message = body["message"] as? String ?: "Reset code sent."
+                    onResult(true, message, otp)
+                } else {
+                    val err = response.errorBody()?.string() ?: "Failed to request reset code."
+                    onResult(false, err, null)
+                }
+            } catch (e: Exception) {
+                onResult(false, "Cannot connect to server. Please try again.", null)
+            }
+        }
+    }
+    fun resetPassword(email: String, otp: String, newPassword: String, onResult: (Boolean, String?) -> Unit) {
+        viewModelScope.launch {
+            try {
+                val response = api.resetPassword(mapOf("email" to email, "otp" to otp, "newPassword" to newPassword))
+                if (response.isSuccessful) {
+                    onResult(true, null)
+                } else {
+                    val body = response.errorBody()?.string() ?: "Failed to reset password."
+                    onResult(false, body)
+                }
+            } catch (e: Exception) {
+                onResult(false, "Cannot connect to server. Please try again.")
+            }
+        }
+    }
+
     fun signUp(user: User, password: String, adminSecret: String? = null, onResult: (Boolean, String?) -> Unit) {
         viewModelScope.launch {
             try {

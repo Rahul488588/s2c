@@ -76,12 +76,21 @@ fun BranchDropdown(
             ),
             textStyle = androidx.compose.ui.text.TextStyle(color = Color.Black)
         )
-        ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }, modifier = Modifier.exposedDropdownSize()) {
+        ExposedDropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+            modifier = Modifier.exposedDropdownSize().background(CardSurface)
+        ) {
             branches.forEach { branch ->
                 DropdownMenuItem(
-                    text = { Text(branch, color = Color.Black) },
+                    text = { Text(branch, color = TextPrimary) },
                     onClick = { onBranchSelected(branch); expanded = false },
-                    contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding
+                    contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding,
+                    colors = MenuDefaults.itemColors(
+                        textColor = TextPrimary,
+                        leadingIconColor = TextMuted
+                    ),
+                    modifier = Modifier.background(CardSurface)
                 )
             }
         }

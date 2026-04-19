@@ -10,6 +10,11 @@ interface ApiService {
     @POST("login")
     suspend fun login(@Body request: LoginRequest): Response<AuthResponse>
 
+    @POST("forgot-password")
+    suspend fun forgotPassword(@Body request: Map<String, String>): Response<Map<String, Any>>
+    @POST("reset-password")
+    suspend fun resetPassword(@Body request: Map<String, String>): Response<Map<String, Any>>
+
     @POST("signup")
     suspend fun signUp(@Body request: SignUpRequest): Response<User>
     

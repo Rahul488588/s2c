@@ -31,7 +31,10 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
-
+import androidx.compose.foundation.border
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 private val NavyDeep      = Color(0xFF1B2A4A)
 private val NavyMid       = Color(0xFF2E3D5E)
 private val Gold          = Color(0xFFC9A84C)
@@ -44,8 +47,12 @@ private val DividerLight  = Color(0xFFD4C5A9)
 private val Burgundy      = Color(0xFF7A2A35)
 private val BurgundyBg    = Color(0xFFF0D5D5)
 
+
+
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
+
 fun LoginScreen(
     mainViewModel: MainViewModel,
     onLoginClick: () -> Unit,
@@ -59,6 +66,7 @@ fun LoginScreen(
     var isLoading by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var adminLoginStep by remember { mutableStateOf("email") }
+    var showForgotPassword by remember { mutableStateOf(false) }
 
     var startAnimation by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) {
@@ -228,8 +236,8 @@ fun LoginScreen(
                         Spacer(modifier = Modifier.height(8.dp))
 
                         Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.CenterEnd) {
-                            TextButton(onClick = { }) {
-                                Text("Forgot Password?", color = TextSecondary, fontSize = 13.sp)
+                            TextButton(onClick = { showForgotPassword = true }) {
+                                Text("Forgot Password?", color = NavyDeep, fontSize = 13.sp, fontWeight = FontWeight.Medium)
                             }
                         }
 
@@ -321,6 +329,275 @@ fun LoginScreen(
             }
 
             Spacer(modifier = Modifier.weight(1f))
+        }
+    }
+    if (showForgotPassword) {
+        ForgotPasswordDialog(
+            mainViewModel = mainViewModel,
+            onDismiss = { showForgotPassword = false }
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ForgotPasswordDialog(
+    mainViewModel: MainViewModel,
+    onDismiss: () -> Unit
+) {
+    var step by remember { mutableStateOf("email") }
+    var email by remember { mutableStateOf("") }
+    var otp by remember { mutableStateOf("") }
+    var receivedOtp by remember { mutableStateOf("") }
+    var newPassword by remember { mutableStateOf("") }
+    var confirmPassword by remember { mutableStateOf("") }
+    var newPasswordVisible by remember { mutableStateOf(false) }
+    var confirmPasswordVisible by remember { mutableStateOf(false) }
+    var isLoading by remember { mutableStateOf(false) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
+
+    val fieldColors = OutlinedTextFieldDefaults.colors(
+        focusedBorderColor = NavyDeep, unfocusedBorderColor = DividerLight,
+        focusedLabelColor = NavyDeep, unfocusedLabelColor = TextMuted,
+        focusedTextColor = Color.Black, unfocusedTextColor = Color.Black,
+        focusedLeadingIconColor = NavyDeep, unfocusedLeadingIconColor = TextMuted,
+        cursorColor = Color.Black
+    )
+
+    Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
+        Surface(
+            modifier = Modifier.fillMaxWidth(0.92f).wrapContentHeight(),
+            shape = RoundedCornerShape(24.dp),
+            color = CardSurface
+        ) {
+            Column(
+                modifier = Modifier.padding(28.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Box(
+                    modifier = Modifier.size(64.dp).clip(CircleShape)
+                        .background(if (step == "success") Color(0xFFD5E8DC) else GoldLight),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = when (step) {
+                            "success" -> Icons.Default.CheckCircle
+                            "otp" -> Icons.Default.Key
+                            else -> Icons.Default.LockReset
+                        },
+                        contentDescription = null,
+                        tint = when (step) {
+                            "success" -> Color(0xFF2D5A3D)
+                            else -> NavyDeep
+                        },
+                        modifier = Modifier.size(32.dp)
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Text(
+                    text = when (step) {
+                        "otp" -> "Enter Reset Code"
+                        "success" -> "Password Reset!"
+                        else -> "Forgot Password?"
+                    },
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = TextPrimary,
+                    textAlign = TextAlign.Center
+                )
+
+                Spacer(modifier = Modifier.height(6.dp))
+
+                Text(
+                    text = when (step) {
+                        "otp" -> "Enter the 6-digit code and your new password."
+                        "success" -> "Your password has been reset successfully. You can now log in."
+                        else -> "Enter your registered email address to receive a reset code."
+                    },
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = TextSecondary,
+                    textAlign = TextAlign.Center
+                )
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                when (step) {
+                    "email" -> {
+                        OutlinedTextField(
+                            value = email,
+                            onValueChange = { email = it; errorMessage = null },
+                            label = { Text("Email address") },
+                            leadingIcon = { Icon(Icons.Outlined.Email, contentDescription = null, tint = TextMuted) },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp),
+                            singleLine = true,
+                            colors = fieldColors,
+                            textStyle = androidx.compose.ui.text.TextStyle(color = Color.Black)
+                        )
+                    }
+
+                    "otp" -> {
+                        if (receivedOtp.isNotEmpty()) {
+                            Card(
+                                colors = CardDefaults.cardColors(containerColor = GoldLight),
+                                shape = RoundedCornerShape(10.dp),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(Icons.Default.Info, contentDescription = null, tint = NavyDeep, modifier = Modifier.size(18.dp))
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Column {
+                                        Text("Your reset code:", style = MaterialTheme.typography.labelSmall, color = TextMuted)
+                                        Text(receivedOtp, fontWeight = FontWeight.Bold, color = NavyDeep, fontSize = 22.sp, letterSpacing = 4.sp)
+                                    }
+                                }
+                            }
+                            Spacer(modifier = Modifier.height(16.dp))
+                        }
+
+                        OutlinedTextField(
+                            value = otp,
+                            onValueChange = { if (it.length <= 6 && it.all { c -> c.isDigit() }) { otp = it; errorMessage = null } },
+                            label = { Text("6-digit Reset Code") },
+                            leadingIcon = { Icon(Icons.Default.Key, contentDescription = null, tint = TextMuted) },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp),
+                            singleLine = true,
+                            colors = fieldColors,
+                            textStyle = androidx.compose.ui.text.TextStyle(color = Color.Black)
+                        )
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        OutlinedTextField(
+                            value = newPassword,
+                            onValueChange = { newPassword = it; errorMessage = null },
+                            label = { Text("New Password") },
+                            leadingIcon = { Icon(Icons.Outlined.Lock, contentDescription = null, tint = TextMuted) },
+                            trailingIcon = {
+                                IconButton(onClick = { newPasswordVisible = !newPasswordVisible }) {
+                                    Icon(if (newPasswordVisible) Icons.Outlined.Visibility else Icons.Outlined.VisibilityOff, null, tint = TextMuted)
+                                }
+                            },
+                            visualTransformation = if (newPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp),
+                            singleLine = true,
+                            colors = fieldColors,
+                            textStyle = androidx.compose.ui.text.TextStyle(color = Color.Black)
+                        )
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        OutlinedTextField(
+                            value = confirmPassword,
+                            onValueChange = { confirmPassword = it; errorMessage = null },
+                            label = { Text("Confirm New Password") },
+                            leadingIcon = { Icon(Icons.Outlined.Lock, contentDescription = null, tint = if (confirmPassword.isNotEmpty() && confirmPassword != newPassword) Burgundy else TextMuted) },
+                            trailingIcon = {
+                                IconButton(onClick = { confirmPasswordVisible = !confirmPasswordVisible }) {
+                                    Icon(if (confirmPasswordVisible) Icons.Outlined.Visibility else Icons.Outlined.VisibilityOff, null, tint = TextMuted)
+                                }
+                            },
+                            visualTransformation = if (confirmPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                            isError = confirmPassword.isNotEmpty() && confirmPassword != newPassword,
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp),
+                            singleLine = true,
+                            colors = fieldColors,
+                            textStyle = androidx.compose.ui.text.TextStyle(color = Color.Black)
+                        )
+                        if (confirmPassword.isNotEmpty() && confirmPassword != newPassword) {
+                            Text("Passwords do not match", color = Burgundy, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(start = 4.dp, top = 2.dp))
+                        }
+                    }
+                }
+
+                errorMessage?.let {
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Card(colors = CardDefaults.cardColors(containerColor = BurgundyBg), shape = RoundedCornerShape(8.dp), modifier = Modifier.fillMaxWidth()) {
+                        Row(modifier = Modifier.padding(10.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Default.Error, contentDescription = null, tint = Burgundy, modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(it, color = Burgundy, style = MaterialTheme.typography.bodySmall)
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                if (step == "success") {
+                    Button(
+                        onClick = onDismiss,
+                        modifier = Modifier.fillMaxWidth().height(50.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = NavyDeep)
+                    ) {
+                        Text("Back to Login", color = Color.White, fontWeight = FontWeight.SemiBold)
+                    }
+                } else {
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        OutlinedButton(
+                            onClick = { if (step == "otp") step = "email" else onDismiss() },
+                            modifier = Modifier.weight(1f).height(50.dp),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Text(if (step == "otp") "Back" else "Cancel", color = TextSecondary)
+                        }
+
+                        Button(
+                            onClick = {
+                                errorMessage = null
+                                when (step) {
+                                    "email" -> {
+                                        if (email.isBlank()) {
+                                            errorMessage = "Please enter your email address"
+                                        } else {
+                                            isLoading = true
+                                            mainViewModel.forgotPassword(email.trim()) { success, message, otpCode ->
+                                                isLoading = false
+                                                if (success) {
+                                                    receivedOtp = otpCode ?: ""
+                                                    step = "otp"
+                                                } else {
+                                                    errorMessage = message
+                                                }
+                                            }
+                                        }
+                                    }
+                                    "otp" -> {
+                                        when {
+                                            otp.length != 6 -> errorMessage = "Please enter the 6-digit reset code"
+                                            newPassword.length < 6 -> errorMessage = "Password must be at least 6 characters"
+                                            newPassword != confirmPassword -> errorMessage = "Passwords do not match"
+                                            else -> {
+                                                isLoading = true
+                                                mainViewModel.resetPassword(email.trim(), otp, newPassword) { success, msg ->
+                                                    isLoading = false
+                                                    if (success) step = "success"
+                                                    else errorMessage = msg
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            },
+                            modifier = Modifier.weight(1f).height(50.dp),
+                            shape = RoundedCornerShape(12.dp),
+                            enabled = !isLoading,
+                            colors = ButtonDefaults.buttonColors(containerColor = NavyDeep)
+                        ) {
+                            if (isLoading) {
+                                CircularProgressIndicator(color = Color.White, modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+                            } else {
+                                Text(if (step == "email") "Send Code" else "Reset Password", color = Color.White, fontWeight = FontWeight.SemiBold)
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 }

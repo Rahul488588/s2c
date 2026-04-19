@@ -713,7 +713,79 @@ fun main() {
                     call.respond(request.user)
                 }
             }
-            
+            // 🔑 FORGOT PASSWORD - Step 1: Request OTP
+            post("/forgot-password") {
+                val params = call.receive<Map<String, String>>()
+                val email = params["email"]?.trim() ?: ""
+                if (email.isBlank()) {
+                    call.respond(HttpStatusCode.BadRequest, mapOf("error" to "Email is required"))
+                    return@post
+                }
+                val userExists = transaction {
+                    UsersTable.select { UsersTable.email eq email }.count() > 0
+                }
+                if (!userExists) {
+                    // Don't reveal whether the email exists for security
+                    call.respond(mapOf("message" to "If this email is registered, you will receive a reset code."))
+                    return@post
+                }
+                // Generate 6-digit OTP
+                val otp = (100000..999999).random().toString()
+                val expiry = System.currentTimeMillis() + (15 * 60 * 1000) // 15 minutes
+                setConfigValue("reset_otp_$email", "$otp|$expiry")
+                println("🔑 Password reset OTP for $email: $otp (expires in 15 minutes)")
+                call.respond(mapOf(
+                    "message" to "Reset code generated successfully.",
+                    "otp" to otp  // In production this would be emailed; returned here for demo
+                ))
+            }
+            // 🔑 FORGOT PASSWORD - Step 2: Reset with OTP
+            post("/reset-password") {
+                val params = call.receive<Map<String, String>>()
+                val email = params["email"]?.trim() ?: ""
+                val otp = params["otp"]?.trim() ?: ""
+                val newPassword = params["newPassword"] ?: ""
+                if (email.isBlank() || otp.isBlank() || newPassword.isBlank()) {
+                    call.respond(HttpStatusCode.BadRequest, mapOf("error" to "Email, OTP and new password are required"))
+                    return@post
+                }
+                if (newPassword.length < 6) {
+                    call.respond(HttpStatusCode.BadRequest, mapOf("error" to "Password must be at least 6 characters"))
+                    return@post
+                }
+                val storedValue = getConfigValue("reset_otp_$email")
+                if (storedValue == null) {
+                    call.respond(HttpStatusCode.BadRequest, mapOf("error" to "No reset code found. Please request a new one."))
+                    return@post
+                }
+                val parts = storedValue.split("|")
+                if (parts.size != 2) {
+                    call.respond(HttpStatusCode.BadRequest, mapOf("error" to "Invalid reset code. Please request a new one."))
+                    return@post
+                }
+                val storedOtp = parts[0]
+                val expiry = parts[1].toLongOrNull() ?: 0L
+                if (System.currentTimeMillis() > expiry) {
+                    // Clean up expired OTP
+                    transaction { ConfigTable.deleteWhere { ConfigTable.key eq "reset_otp_$email" } }
+                    call.respond(HttpStatusCode.BadRequest, mapOf("error" to "Reset code has expired. Please request a new one."))
+                    return@post
+                }
+                if (otp != storedOtp) {
+                    call.respond(HttpStatusCode.BadRequest, mapOf("error" to "Invalid reset code. Please check and try again."))
+                    return@post
+                }
+                // Update password
+                transaction {
+                    UsersTable.update({ UsersTable.email eq email }) {
+                        it[UsersTable.password] = hashPassword(newPassword)
+                    }
+                    // Remove used OTP
+                    ConfigTable.deleteWhere { ConfigTable.key eq "reset_otp_$email" }
+                }
+                println("✅ Password reset successful for: $email")
+                call.respond(mapOf("message" to "Password reset successfully. You can now login with your new password."))
+            }
             // 🔹 Accept Admin Invite
             post("/admin/accept-invite") {
                 val params = call.receive<Map<String, String>>()

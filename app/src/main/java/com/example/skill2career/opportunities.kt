@@ -109,6 +109,7 @@ fun OpportunitiesScreen(navController: NavController, initialFilter: String = "A
     var showApplyDialog by remember { mutableStateOf(false) }
     var showDetailDialog by remember { mutableStateOf(false) }
     var selectedOpportunity by remember { mutableStateOf<Opportunity?>(null) }
+    val snackbarHostState = remember { SnackbarHostState() }
 
     val allOpportunities = mainViewModel.opportunities
 
@@ -147,7 +148,17 @@ fun OpportunitiesScreen(navController: NavController, initialFilter: String = "A
                     )
                 )
             },
-            containerColor = OppIvory
+            containerColor = OppIvory,
+            snackbarHost = {
+                SnackbarHost(snackbarHostState) { data ->
+                    Snackbar(
+                        snackbarData = data,
+                        containerColor = OppForestGreen,
+                        contentColor = Color.White,
+                        shape = RoundedCornerShape(12.dp)
+                    )
+                }
+            }
         ) { paddingValues ->
             Column(
                 modifier = Modifier
@@ -257,6 +268,9 @@ fun OpportunitiesScreen(navController: NavController, initialFilter: String = "A
                     onApplySubmit = { application, uris ->
                         mainViewModel.applyForOpportunity(application, uris)
                         showApplyDialog = false
+                        scope.launch {
+                            snackbarHostState.showSnackbar("Application submitted successfully!")
+                        }
                     }
                 )
             }
