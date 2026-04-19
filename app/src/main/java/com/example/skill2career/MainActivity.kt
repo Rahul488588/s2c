@@ -85,10 +85,20 @@ class MainActivity : ComponentActivity() {
                         composable("studentScreen") {
                             StudentScreen(navController = navController, mainViewModel = mainViewModel)
                         }
+                        
+                        // STUDENT NOTIFICATIONS
+                        composable("studentNotifications") {
+                            StudentNotificationsScreen(navController = navController, mainViewModel = mainViewModel)
+                        }
 
                         // ADMIN DASHBOARD
                         composable("admin") {
                             AdminScreen(navController = navController, mainViewModel = mainViewModel)
+                        }
+                        
+                        // ADMIN NOTIFICATIONS
+                        composable("adminNotifications") {
+                            AdminNotificationsScreen(navController = navController, mainViewModel = mainViewModel)
                         }
 
                         // ADMIN APPLICATIONS

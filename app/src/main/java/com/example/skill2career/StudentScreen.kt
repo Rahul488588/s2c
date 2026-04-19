@@ -5,6 +5,8 @@ import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.itemsIndexed
@@ -109,7 +111,7 @@ fun StudentScreen(navController: NavController, mainViewModel: MainViewModel) {
                         }
                     },
                     actions = {
-                        IconButton(onClick = { }) {
+                        IconButton(onClick = { navController.navigate("studentNotifications") }) {
                             Icon(Icons.Default.Notifications, contentDescription = "Notifications", tint = Gold)
                         }
                     },
@@ -148,6 +150,73 @@ fun StudentScreen(navController: NavController, mainViewModel: MainViewModel) {
                 Spacer(modifier = Modifier.height(16.dp))
 
                 RecentOpportunitiesCard(navController, mainViewModel)
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun StudentNotificationsScreen(navController: NavController, mainViewModel: MainViewModel) {
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Notifications", fontWeight = FontWeight.Bold, color = Color.White) },
+                navigationIcon = {
+                    IconButton(onClick = { navController.navigateUp() }) {
+                        Icon(Icons.Default.Close, contentDescription = "Back", tint = Gold)
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = NavyDeep,
+                    titleContentColor = Color.White
+                )
+            )
+        },
+        containerColor = Ivory
+    ) { paddingValues ->
+        // For students, notifications could be about application status changes, new opportunities, etc.
+        // Reusing the general NotificationCard style for consistency.
+        val notifications = mainViewModel.superAdminNotifications // In a real app, this would be student-specific
+        
+        if (notifications.isEmpty()) {
+            Box(modifier = Modifier.fillMaxSize().padding(paddingValues), contentAlignment = Alignment.Center) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Icon(
+                        imageVector = Icons.Default.NotificationsNone,
+                        contentDescription = null,
+                        modifier = Modifier.size(64.dp),
+                        tint = TextMuted
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        "No new notifications",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = TextSecondary
+                    )
+                    Text(
+                        "We'll let you know when something important happens.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = TextMuted
+                    )
+                }
+            }
+        } else {
+            LazyColumn(
+                modifier = Modifier.fillMaxSize().padding(paddingValues),
+                contentPadding = PaddingValues(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                items(notifications) { notification ->
+                    NotificationCard(
+                        notification = notification,
+                        onClick = { 
+                            if (mainViewModel.isSuperAdmin()) {
+                                mainViewModel.markNotificationRead(notification.id)
+                            }
+                        }
+                    )
+                }
             }
         }
     }
@@ -535,7 +604,7 @@ fun StatsGrid(navController: NavController, mainViewModel: MainViewModel) {
         Stat(opportunitiesCount, "Opportunities", Icons.AutoMirrored.Filled.TrendingUp, ForestGreen, "opportunities"),
         Stat(appliedCount, "Applied", Icons.Default.CheckCircle, NavyDeep, "myApplications"),
         Stat(scholarshipCount, "Scholarships", Icons.Default.School, Gold, "opportunities?filter=Scholarship"),
-        Stat("3", "Notifications", Icons.Default.Notifications, Burgundy, null)
+        Stat("0", "Notifications", Icons.Default.Notifications, Burgundy, "studentNotifications")
     )
 
     LazyVerticalGrid(

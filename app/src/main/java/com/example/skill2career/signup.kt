@@ -62,7 +62,6 @@ fun BranchDropdown(
             onValueChange = {},
             readOnly = true,
             label = { Text("Branch") },
-            placeholder = { Text("Select your branch") },
             leadingIcon = { Icon(imageVector = Icons.Outlined.School, contentDescription = null, tint = TextMuted) },
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
             modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable, true).fillMaxWidth(),
@@ -166,8 +165,8 @@ fun SignUpScreen(
                     Column(modifier = Modifier.padding(24.dp)) {
 
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                            OutlinedTextField(value = firstName, onValueChange = { firstName = it; errorMessage = null }, label = { Text("First Name") }, placeholder = { Text("Rahul") }, modifier = Modifier.weight(1f).background(Color.White), shape = RoundedCornerShape(12.dp), singleLine = true, colors = fieldColors, textStyle = androidx.compose.ui.text.TextStyle(color = Color.Black))
-                            OutlinedTextField(value = lastName, onValueChange = { lastName = it; errorMessage = null }, label = { Text("Last Name") }, placeholder = { Text("Sharma") }, modifier = Modifier.weight(1f).background(Color.White), shape = RoundedCornerShape(12.dp), singleLine = true, colors = fieldColors, textStyle = androidx.compose.ui.text.TextStyle(color = Color.Black))
+                            OutlinedTextField(value = firstName, onValueChange = { firstName = it; errorMessage = null }, label = { Text("First Name") }, modifier = Modifier.weight(1f).background(Color.White), shape = RoundedCornerShape(12.dp), singleLine = true, colors = fieldColors, textStyle = androidx.compose.ui.text.TextStyle(color = Color.Black))
+                            OutlinedTextField(value = lastName, onValueChange = { lastName = it; errorMessage = null }, label = { Text("Last Name") }, modifier = Modifier.weight(1f).background(Color.White), shape = RoundedCornerShape(12.dp), singleLine = true, colors = fieldColors, textStyle = androidx.compose.ui.text.TextStyle(color = Color.Black))
                         }
 
                         Spacer(modifier = Modifier.height(16.dp))
@@ -186,13 +185,13 @@ fun SignUpScreen(
                         Spacer(modifier = Modifier.height(16.dp))
 
                         androidx.compose.material3.ProvideTextStyle(androidx.compose.ui.text.TextStyle(color = Color.Black)) {
-                            OutlinedTextField(value = email, onValueChange = { email = it; emailError = !isValidEmail(it) && it.isNotEmpty(); errorMessage = null }, label = { Text("Email address") }, placeholder = { Text("your@email.com") }, isError = emailError, leadingIcon = { Icon(imageVector = Icons.Outlined.Email, contentDescription = null, tint = if (emailError) Burgundy else TextMuted) }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email), modifier = Modifier.fillMaxWidth().background(Color.White), shape = RoundedCornerShape(12.dp), singleLine = true, colors = fieldColors)
+                            OutlinedTextField(value = email, onValueChange = { email = it; emailError = !isValidEmail(it) && it.isNotEmpty(); errorMessage = null }, label = { Text("Email address") }, isError = emailError, leadingIcon = { Icon(imageVector = Icons.Outlined.Email, contentDescription = null, tint = if (emailError) Burgundy else TextMuted) }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email), modifier = Modifier.fillMaxWidth().background(Color.White), shape = RoundedCornerShape(12.dp), singleLine = true, colors = fieldColors)
                         }
                         if (emailError) Text(text = "Please enter a valid email", color = Burgundy, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(start = 16.dp, top = 4.dp))
 
                         Spacer(modifier = Modifier.height(16.dp))
 
-                        OutlinedTextField(value = phoneNumber, onValueChange = { phoneNumber = it; errorMessage = null }, label = { Text("Phone Number") }, placeholder = { Text("+91 98765 43210") }, leadingIcon = { Icon(imageVector = Icons.Outlined.Phone, contentDescription = null, tint = TextMuted) }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone), modifier = Modifier.fillMaxWidth().background(Color.White), shape = RoundedCornerShape(12.dp), singleLine = true, colors = fieldColors, textStyle = androidx.compose.ui.text.TextStyle(color = Color.Black))
+                        OutlinedTextField(value = phoneNumber, onValueChange = { phoneNumber = it; errorMessage = null }, label = { Text("Phone Number") }, leadingIcon = { Icon(imageVector = Icons.Outlined.Phone, contentDescription = null, tint = TextMuted) }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone), modifier = Modifier.fillMaxWidth().background(Color.White), shape = RoundedCornerShape(12.dp), singleLine = true, colors = fieldColors, textStyle = androidx.compose.ui.text.TextStyle(color = Color.Black))
 
                         Spacer(modifier = Modifier.height(16.dp))
 
@@ -200,11 +199,11 @@ fun SignUpScreen(
 
                         Spacer(modifier = Modifier.height(16.dp))
 
-                        OutlinedTextField(value = password, onValueChange = { password = it; errorMessage = null }, label = { Text("Password") }, placeholder = { Text("Min. 6 characters") }, leadingIcon = { Icon(imageVector = Icons.Outlined.Lock, contentDescription = null, tint = TextMuted) }, visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(), trailingIcon = { IconButton(onClick = { passwordVisible = !passwordVisible }) { Icon(imageVector = if (passwordVisible) Icons.Outlined.Visibility else Icons.Outlined.VisibilityOff, contentDescription = null, tint = TextMuted) } }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password), modifier = Modifier.fillMaxWidth().background(Color.White), shape = RoundedCornerShape(12.dp), singleLine = true, colors = fieldColors, textStyle = androidx.compose.ui.text.TextStyle(color = Color.Black))
+                        OutlinedTextField(value = password, onValueChange = { password = it; errorMessage = null }, label = { Text("Password") }, leadingIcon = { Icon(imageVector = Icons.Outlined.Lock, contentDescription = null, tint = TextMuted) }, visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(), trailingIcon = { IconButton(onClick = { passwordVisible = !passwordVisible }) { Icon(imageVector = if (passwordVisible) Icons.Outlined.Visibility else Icons.Outlined.VisibilityOff, contentDescription = null, tint = TextMuted) } }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password), modifier = Modifier.fillMaxWidth().background(Color.White), shape = RoundedCornerShape(12.dp), singleLine = true, colors = fieldColors, textStyle = androidx.compose.ui.text.TextStyle(color = Color.Black))
 
                         Spacer(modifier = Modifier.height(16.dp))
 
-                        OutlinedTextField(value = confirmPassword, onValueChange = { confirmPassword = it; errorMessage = null }, label = { Text("Confirm Password") }, placeholder = { Text("Re-enter password") }, isError = !passwordsMatch && confirmPassword.isNotEmpty(), leadingIcon = { Icon(imageVector = Icons.Outlined.Lock, contentDescription = null, tint = if (!passwordsMatch && confirmPassword.isNotEmpty()) Burgundy else TextMuted) }, visualTransformation = if (confirmPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(), trailingIcon = { IconButton(onClick = { confirmPasswordVisible = !confirmPasswordVisible }) { Icon(imageVector = if (confirmPasswordVisible) Icons.Outlined.Visibility else Icons.Outlined.VisibilityOff, contentDescription = null, tint = TextMuted) } }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password), modifier = Modifier.fillMaxWidth().background(Color.White), shape = RoundedCornerShape(12.dp), singleLine = true, colors = fieldColors, textStyle = androidx.compose.ui.text.TextStyle(color = Color.Black))
+                        OutlinedTextField(value = confirmPassword, onValueChange = { confirmPassword = it; errorMessage = null }, label = { Text("Confirm Password") }, isError = !passwordsMatch && confirmPassword.isNotEmpty(), leadingIcon = { Icon(imageVector = Icons.Outlined.Lock, contentDescription = null, tint = if (!passwordsMatch && confirmPassword.isNotEmpty()) Burgundy else TextMuted) }, visualTransformation = if (confirmPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(), trailingIcon = { IconButton(onClick = { confirmPasswordVisible = !confirmPasswordVisible }) { Icon(imageVector = if (confirmPasswordVisible) Icons.Outlined.Visibility else Icons.Outlined.VisibilityOff, contentDescription = null, tint = TextMuted) } }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password), modifier = Modifier.fillMaxWidth().background(Color.White), shape = RoundedCornerShape(12.dp), singleLine = true, colors = fieldColors, textStyle = androidx.compose.ui.text.TextStyle(color = Color.Black))
                         if (!passwordsMatch && confirmPassword.isNotEmpty()) Text(text = "Passwords do not match", color = Burgundy, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(start = 16.dp, top = 4.dp))
 
                         errorMessage?.let {

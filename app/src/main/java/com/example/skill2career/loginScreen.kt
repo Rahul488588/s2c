@@ -54,7 +54,6 @@ fun LoginScreen(
     var selectedLoginType by remember { mutableStateOf("Student") }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
-    var adminPasswordVisible by remember { mutableStateOf(false) }
     var passwordVisible by remember { mutableStateOf(false) }
     var emailError by remember { mutableStateOf(false) }
     var isLoading by remember { mutableStateOf(false) }
@@ -179,7 +178,6 @@ fun LoginScreen(
                             value = email,
                             onValueChange = { email = it; emailError = !isValidEmail(it) && it.isNotEmpty(); errorMessage = null },
                             label = { Text("Email address") },
-                            placeholder = { Text("name@college.edu") },
                             isError = emailError || errorMessage != null,
                             leadingIcon = { Icon(imageVector = Icons.Outlined.Email, contentDescription = null, tint = if (emailError) Burgundy else TextMuted) },
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email, autoCorrectEnabled = false),
@@ -205,7 +203,6 @@ fun LoginScreen(
                             value = password,
                             onValueChange = { password = it; errorMessage = null },
                             label = { Text("Password") },
-                            placeholder = { Text("Enter your password") },
                             leadingIcon = { Icon(imageVector = Icons.Outlined.Lock, contentDescription = null, tint = TextMuted) },
                             trailingIcon = {
                                 IconButton(onClick = { passwordVisible = !passwordVisible }) {

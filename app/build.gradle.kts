@@ -52,6 +52,9 @@ dependencies {
     implementation("com.squareup.retrofit2:converter-gson:$retrofitVersion")
     implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
 
+    // IMAGE LOADING
+    implementation("io.coil-kt:coil-compose:2.6.0")
+
     // ROOM DATABASE
     val roomVersion = "2.7.0-alpha11"
     implementation("androidx.room:room-runtime:$roomVersion")

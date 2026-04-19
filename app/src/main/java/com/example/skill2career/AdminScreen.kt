@@ -9,6 +9,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForwardIos
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
@@ -64,11 +66,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.BorderStroke
 import androidx.navigation.NavController
 import kotlinx.coroutines.launch
 
@@ -143,7 +148,7 @@ fun AdminScreen(navController: NavController, mainViewModel: MainViewModel) {
                         }
                     },
                     actions = {
-                        IconButton(onClick = { }) {
+                        IconButton(onClick = { navController.navigate("adminNotifications") }) {
                             Icon(Icons.Default.Notifications, contentDescription = "Notifications", tint = Gold)
                         }
                     },
@@ -250,6 +255,54 @@ fun AdminSidebar(
             }
         }
         Spacer(modifier = Modifier.height(12.dp))
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun AdminNotificationsScreen(navController: NavController, mainViewModel: MainViewModel) {
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Notifications", fontWeight = FontWeight.Bold) },
+                navigationIcon = {
+                    IconButton(onClick = { navController.navigateUp() }) {
+                        Icon(Icons.Default.Close, contentDescription = "Back", tint = Gold)
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = NavyDeep,
+                    titleContentColor = Color.White
+                )
+            )
+        },
+        containerColor = Ivory
+    ) { paddingValues ->
+        // For now, let's reuse the Super Admin notifications UI but filtered or generalized
+        val notifications = mainViewModel.superAdminNotifications
+        
+        if (notifications.isEmpty()) {
+            Box(modifier = Modifier.fillMaxSize().padding(paddingValues), contentAlignment = Alignment.Center) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Icon(Icons.Default.Notifications, contentDescription = null, modifier = Modifier.size(64.dp), tint = TextMuted)
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text("No new notifications", color = TextSecondary)
+                }
+            }
+        } else {
+            LazyColumn(
+                modifier = Modifier.fillMaxSize().padding(paddingValues),
+                contentPadding = PaddingValues(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                items(notifications) { notification ->
+                    NotificationCard(
+                        notification = notification,
+                        onClick = { mainViewModel.markNotificationRead(notification.id) }
+                    )
+                }
+            }
+        }
     }
 }
 
@@ -576,9 +629,10 @@ fun AdminOverview(onPostClick: () -> Unit, mainViewModel: MainViewModel, padding
                 elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
-                    mainViewModel.allStudents.take(5).forEach { student ->
+                    val filteredStudents = mainViewModel.allStudents.filter { it.email != "student@s2c.com" }
+                    filteredStudents.take(5).forEach { student ->
                         AdminStudentRow(student, mainViewModel)
-                        if (student != mainViewModel.allStudents.lastOrNull()) {
+                        if (student != filteredStudents.lastOrNull()) {
                             HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp), color = DividerLight)
                         }
                     }
@@ -822,74 +876,217 @@ fun AddOpportunityDialog(onDismiss: () -> Unit, mainViewModel: MainViewModel) {
     var location by remember { mutableStateOf("") }
     var minCgpa by remember { mutableStateOf("") }
     var stipendOrSalary by remember { mutableStateOf("") }
+    var tagsInput by remember { mutableStateOf("") }
 
-    Dialog(onDismissRequest = onDismiss) {
-        Card(
-            modifier = Modifier.fillMaxWidth().padding(16.dp),
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false)
+    ) {
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth(0.92f)
+                .wrapContentHeight()
+                .padding(vertical = 24.dp),
             shape = RoundedCornerShape(24.dp),
-            colors = CardDefaults.cardColors(containerColor = CardSurface)
+            color = CardSurface,
+            shadowElevation = 8.dp
         ) {
-            LazyColumn(modifier = Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                item {
-                    Text(
-                        "Post Opportunity",
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = NavyDeep
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(24.dp)
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column {
+                        Text(
+                            "Post Opportunity",
+                            style = MaterialTheme.typography.headlineSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = NavyDeep
+                        )
+                        Text(
+                            "Fill in the details for the new listing",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = TextSecondary
+                        )
+                    }
+                    IconButton(onClick = onDismiss) {
+                        Icon(Icons.Default.Close, contentDescription = "Close", tint = TextMuted)
+                    }
+                }
+
+                HorizontalDivider(color = DividerLight.copy(alpha = 0.5f))
+
+                AdminTextField(
+                    value = title,
+                    onValueChange = { title = it },
+                    label = "Opportunity Title",
+                    placeholder = "",
+                    icon = Icons.Default.Badge
+                )
+
+                AdminTextField(
+                    value = company,
+                    onValueChange = { company = it },
+                    label = "Company Name",
+                    placeholder = "",
+                    icon = Icons.Default.Apartment
+                )
+
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    AdminTextField(
+                        value = location,
+                        onValueChange = { location = it },
+                        label = "Location",
+                        placeholder = "",
+                        icon = Icons.Default.LocationOn,
+                        modifier = Modifier.weight(1f)
+                    )
+                    AdminTextField(
+                        value = stipendOrSalary,
+                        onValueChange = { stipendOrSalary = it },
+                        label = "Stipend/Salary",
+                        placeholder = "",
+                        icon = Icons.Default.MonetizationOn,
+                        modifier = Modifier.weight(1f)
                     )
                 }
 
-                item { OutlinedTextField(value = title, onValueChange = { title = it }, label = { Text("Title") }, modifier = Modifier.fillMaxWidth()) }
-                item { OutlinedTextField(value = company, onValueChange = { company = it }, label = { Text("Company") }, modifier = Modifier.fillMaxWidth()) }
-                item { OutlinedTextField(value = location, onValueChange = { location = it }, label = { Text("Location") }, modifier = Modifier.fillMaxWidth()) }
-                item { OutlinedTextField(value = stipendOrSalary, onValueChange = { stipendOrSalary = it }, label = { Text("Stipend/Salary") }, modifier = Modifier.fillMaxWidth()) }
-
-                item {
-                    OutlinedTextField(
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    AdminTextField(
                         value = minCgpa,
                         onValueChange = { if (it.isEmpty() || it.toDoubleOrNull() != null) minCgpa = it },
-                        label = { Text("Minimum CGPA (Optional)") },
-                        modifier = Modifier.fillMaxWidth(),
-                        keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Number)
+                        label = "Min CGPA",
+                        placeholder = "",
+                        icon = Icons.Default.School,
+                        modifier = Modifier.weight(0.4f),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                    )
+                    AdminTextField(
+                        value = tagsInput,
+                        onValueChange = { tagsInput = it },
+                        label = "Skills (comma separated)",
+                        placeholder = "",
+                        icon = Icons.Default.FilterList,
+                        modifier = Modifier.weight(0.6f)
                     )
                 }
 
-                item {
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        OpportunityType.entries.forEach { t ->
-                            FilterChip(
-                                selected = type == t,
-                                onClick = { type = t },
-                                label = { Text(t.name) }
+                Text(
+                    "Opportunity Type",
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.SemiBold,
+                    color = NavyDeep,
+                    modifier = Modifier.padding(top = 4.dp)
+                )
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    OpportunityType.entries.forEach { t ->
+                        val isSelected = type == t
+                        Surface(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clip(RoundedCornerShape(12.dp))
+                                .clickable { type = t },
+                            color = if (isSelected) NavyDeep else NavyDeep.copy(alpha = 0.05f),
+                            border = if (isSelected) null else BorderStroke(1.dp, DividerLight)
+                        ) {
+                            Text(
+                                text = t.name,
+                                modifier = Modifier.padding(vertical = 10.dp),
+                                textAlign = TextAlign.Center,
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                color = if (isSelected) Gold else TextPrimary
                             )
                         }
                     }
                 }
 
-                item {
-                    Button(
-                        onClick = {
-                            val newOpp = Opportunity(
-                                id = System.currentTimeMillis().toString(),
-                                title = title,
-                                company = company,
-                                type = type,
-                                tags = listOf(),
-                                location = location,
-                                stipendOrSalary = stipendOrSalary.ifBlank { null },
-                                date = "Just now",
-                                minCgpa = minCgpa.toDoubleOrNull()
-                            )
-                            mainViewModel.postOpportunity(newOpp)
-                            onDismiss()
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                        enabled = title.isNotBlank() && company.isNotBlank(),
-                        colors = ButtonDefaults.buttonColors(containerColor = NavyDeep)
-                    ) { Text("Post Now", color = Color.White) }
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Button(
+                    onClick = {
+                        val tags = tagsInput.split(",").map { it.trim() }.filter { it.isNotEmpty() }
+                        val newOpp = Opportunity(
+                            id = System.currentTimeMillis().toString(),
+                            title = title,
+                            company = company,
+                            type = type,
+                            tags = tags,
+                            location = location,
+                            stipendOrSalary = stipendOrSalary.ifBlank { null },
+                            date = "Posted just now",
+                            minCgpa = minCgpa.toDoubleOrNull()
+                        )
+                        mainViewModel.postOpportunity(newOpp)
+                        onDismiss()
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(54.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    enabled = title.isNotBlank() && company.isNotBlank() && location.isNotBlank(),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = NavyDeep,
+                        contentColor = Color.White
+                    ),
+                    elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp)
+                ) {
+                    Icon(Icons.Default.Save, contentDescription = null, modifier = Modifier.size(20.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Publish Opportunity", fontSize = 16.sp, fontWeight = FontWeight.Bold)
                 }
             }
         }
+    }
+}
+
+@Composable
+fun AdminTextField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    label: String,
+    placeholder: String,
+    icon: ImageVector,
+    modifier: Modifier = Modifier,
+    keyboardOptions: KeyboardOptions = KeyboardOptions.Default
+) {
+    Column(modifier = modifier) {
+        Text(
+            label,
+            style = MaterialTheme.typography.labelLarge,
+            fontWeight = FontWeight.SemiBold,
+            color = NavyDeep,
+            modifier = Modifier.padding(bottom = 6.dp)
+        )
+        OutlinedTextField(
+            value = value,
+            onValueChange = onValueChange,
+            modifier = Modifier.fillMaxWidth(),
+            placeholder = { Text(placeholder, fontSize = 14.sp, color = TextMuted) },
+            leadingIcon = { Icon(icon, contentDescription = null, modifier = Modifier.size(18.dp), tint = Gold) },
+            shape = RoundedCornerShape(12.dp),
+            singleLine = true,
+            keyboardOptions = keyboardOptions,
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = Gold,
+                unfocusedBorderColor = DividerLight,
+                focusedContainerColor = Color.White,
+                unfocusedContainerColor = Color.White,
+                focusedTextColor = TextPrimary,
+                unfocusedTextColor = TextPrimary
+            )
+        )
     }
 }
 

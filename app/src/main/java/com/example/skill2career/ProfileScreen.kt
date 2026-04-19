@@ -1,24 +1,35 @@
 package com.example.skill2career
 
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import coil.compose.rememberAsyncImagePainter
 
 private val NavyDeep    = Color(0xFF1B2A4A)
 private val NavyMid     = Color(0xFF2E3D5E)
@@ -36,6 +47,13 @@ private val Burgundy    = Color(0xFF7A2A35)
 @Composable
 fun ProfileScreen(navController: NavController, mainViewModel: MainViewModel) {
     val user = mainViewModel.currentUser.value
+    var profileImageUri by remember { mutableStateOf<Uri?>(null) }
+    
+    val photoLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        profileImageUri = uri
+    }
 
     Scaffold(
         topBar = {
@@ -57,17 +75,80 @@ fun ProfileScreen(navController: NavController, mainViewModel: MainViewModel) {
             }
         } else {
             Column(
-                modifier = Modifier.fillMaxSize().padding(paddingValues).padding(24.dp),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+                    .padding(horizontal = 24.dp)
+                    .verticalScroll(rememberScrollState()),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Box(
-                    modifier = Modifier.size(100.dp).background(brush = Brush.linearGradient(listOf(NavyDeep, NavyMid)), shape = CircleShape),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(text = user.name.take(1).uppercase(), color = Gold, fontSize = 40.sp, fontWeight = FontWeight.Bold)
+                Spacer(modifier = Modifier.height(32.dp))
+                
+                // Profile Picture Section
+                Box(contentAlignment = Alignment.BottomEnd) {
+                    Surface(
+                        modifier = Modifier
+                            .size(120.dp)
+                            .shadow(8.dp, CircleShape),
+                        shape = CircleShape,
+                        color = Color.White,
+                        border = androidx.compose.foundation.BorderStroke(3.dp, Gold)
+                    ) {
+                        if (profileImageUri != null) {
+                            Image(
+                                painter = rememberAsyncImagePainter(profileImageUri),
+                                contentDescription = "Profile Picture",
+                                modifier = Modifier.fillMaxSize().clip(CircleShape),
+                                contentScale = ContentScale.Crop
+                            )
+                        } else {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .background(brush = Brush.linearGradient(listOf(NavyDeep, NavyMid))),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = user.name.take(1).uppercase(),
+                                    color = Gold,
+                                    fontSize = 48.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+                    }
+                    
+                    // Edit/Set Photo Button
+                    Surface(
+                        modifier = Modifier
+                            .size(36.dp)
+                            .offset(x = (-4).dp, y = (-4).dp)
+                            .clickable { photoLauncher.launch("image/*") },
+                        shape = CircleShape,
+                        color = Gold,
+                        shadowElevation = 4.dp
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.CameraAlt,
+                            contentDescription = "Set Profile Picture",
+                            tint = NavyDeep,
+                            modifier = Modifier.padding(8.dp)
+                        )
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
+                
+                TextButton(onClick = { photoLauncher.launch("image/*") }) {
+                    Text(
+                        text = if (profileImageUri == null) "Set Profile Picture" else "Change Picture",
+                        color = NavyDeep,
+                        fontWeight = FontWeight.SemiBold,
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
                 Text(user.name, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold, color = TextPrimary)
                 Text(user.role, color = TextSecondary, style = MaterialTheme.typography.bodyLarge)
 
@@ -87,19 +168,23 @@ fun ProfileScreen(navController: NavController, mainViewModel: MainViewModel) {
                     ProfileStatCard("Saved", mainViewModel.savedOpportunities.size.toString(), Icons.Default.Bookmark, Modifier.weight(1f))
                 }
 
-                Spacer(modifier = Modifier.weight(1f))
+                Spacer(modifier = Modifier.height(40.dp))
 
                 Button(
-                    onClick = { mainViewModel.logout(); navController.navigate("login") { popUpTo(0) { inclusive = true } } },
-                    modifier = Modifier.fillMaxWidth(),
+                    onClick = { 
+                        mainViewModel.logout()
+                        navController.navigate("login") { popUpTo(0) { inclusive = true } } 
+                    },
+                    modifier = Modifier.fillMaxWidth().height(54.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = Burgundy),
-                    shape = RoundedCornerShape(12.dp)
+                    shape = RoundedCornerShape(12.dp),
+                    elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp)
                 ) {
-                    Icon(Icons.Default.Logout, contentDescription = null)
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Logout", fontWeight = FontWeight.Bold)
+                    Icon(Icons.Default.Logout, contentDescription = null, modifier = Modifier.size(20.dp))
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Text("Logout", fontWeight = FontWeight.Bold, fontSize = 16.sp)
                 }
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(32.dp))
             }
         }
     }
@@ -107,11 +192,22 @@ fun ProfileScreen(navController: NavController, mainViewModel: MainViewModel) {
 
 @Composable
 fun ProfileInfoCard(items: List<ProfileInfoItem>) {
-    Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(20.dp), colors = CardDefaults.cardColors(containerColor = CardSurface), elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = CardSurface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
         Column(modifier = Modifier.padding(16.dp)) {
             items.forEachIndexed { index, item ->
-                Row(modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Box(modifier = Modifier.size(40.dp).background(GoldLight, CircleShape), contentAlignment = Alignment.Center) {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = Modifier.size(40.dp).background(GoldLight, CircleShape),
+                        contentAlignment = Alignment.Center
+                    ) {
                         Icon(item.icon, contentDescription = null, tint = NavyDeep, modifier = Modifier.size(20.dp))
                     }
                     Spacer(modifier = Modifier.width(16.dp))
@@ -120,7 +216,7 @@ fun ProfileInfoCard(items: List<ProfileInfoItem>) {
                         Text(item.value, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium, color = TextPrimary)
                     }
                 }
-                if (index < items.size - 1) HorizontalDivider(color = DividerLight, thickness = 0.5.dp)
+                if (index < items.size - 1) HorizontalDivider(color = DividerLight.copy(alpha = 0.5f), thickness = 0.5.dp)
             }
         }
     }
@@ -128,8 +224,17 @@ fun ProfileInfoCard(items: List<ProfileInfoItem>) {
 
 @Composable
 fun ProfileStatCard(title: String, count: String, icon: ImageVector, modifier: Modifier = Modifier) {
-    Card(modifier = modifier, shape = RoundedCornerShape(20.dp), colors = CardDefaults.cardColors(containerColor = CardSurface), elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)) {
-        Column(modifier = Modifier.padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
+    Card(
+        modifier = modifier,
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = CardSurface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
             Icon(icon, contentDescription = null, tint = Gold)
             Spacer(modifier = Modifier.height(8.dp))
             Text(count, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold, color = TextPrimary)
