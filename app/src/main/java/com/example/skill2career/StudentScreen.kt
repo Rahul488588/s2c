@@ -144,12 +144,6 @@ fun StudentScreen(navController: NavController, mainViewModel: MainViewModel) {
                 QuickActionsGrid(navController)
 
                 Spacer(modifier = Modifier.height(32.dp))
-
-                SectionHeader("Recent Opportunities")
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                RecentOpportunitiesCard(navController, mainViewModel)
             }
         }
     }
